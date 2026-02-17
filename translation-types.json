@@ -1,0 +1,23 @@
+[
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "nvarchar",
+    "type_destiny": "VARCHAR",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "varchar",
+    "type_destiny": "VARCHAR",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "int",
+    "type_destiny": "INTEGER",
+    "is_precision": false
+  }
+]
