@@ -103,12 +103,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         db_actions::sql_server_actions::get_table_by_schema(origin, &schema_names, tables_query)
             .await
             .unwrap_or(Vec::new());
-    //data_tables.iter().for_each(|data| println!("{:?}", data));
-    // let write = data_tables
-    //     .iter()
-    //     .map(|data| data.to_string_conversion())
-    //     .collect::<Vec<String>>()
-    //     .join(";");
 
     //Generate DDL for creating Tables
     let types_translation: Vec<&TypeMapper> = type_usages
