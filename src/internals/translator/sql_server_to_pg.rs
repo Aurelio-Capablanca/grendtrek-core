@@ -6,21 +6,14 @@ use std::collections::HashMap;
 fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
     let mut ddl_column = String::new();
     let backup = &&TypeMapper::empty_struct();
-    let field_type: &str = if column
-        .get_constraint_type()
-        .eq_ignore_ascii_case("PRIMARY KEY")
-    {
-        "SERIAL"
-    } else {
-        types_conversion
-            .iter()
-            .find(|pred| {
-                pred.get_type_origin()
-                    .eq_ignore_ascii_case(column.get_data_type())
-            })
-            .unwrap_or(backup)
-            .get_type_destiny()
-    };
+    let field_type: &str = types_conversion
+        .iter()
+        .find(|pred| {
+            pred.get_type_origin()
+                .eq_ignore_ascii_case(column.get_data_type())
+        })
+        .unwrap_or(backup)
+        .get_type_destiny();
     ddl_column.push_str("\"");
     ddl_column.push_str(&column.get_column_name().replace(" ", "_"));
     ddl_column.push_str("\"");

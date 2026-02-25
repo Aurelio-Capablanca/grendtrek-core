@@ -51,10 +51,7 @@ pub async fn get_table_by_schema(
                 for row in query {
                     let column_name: &str = row.get("column_name").unwrap_or_else(|| "");
                     let data_type: &str = row.get("data_type").unwrap_or_else(|| "");
-                    let length_field: i32 = row.get("length_field").unwrap_or_else(|| 0);
-                    let description: &str = row.get("ms_description").unwrap_or_else(|| "");
-                    let constraint_name: &str = row.get("constraint_name").unwrap_or_else(|| "");
-                    let constraint_type: &str = row.get("constraint_type").unwrap_or_else(|| "");
+                    let length_field: i32 = row.get("length_field").unwrap_or_else(|| 0);                    
                     let is_nullable: bool = if row
                         .get("is_nullable")
                         .unwrap_or_else(|| "")
@@ -63,21 +60,14 @@ pub async fn get_table_by_schema(
                         false
                     } else {
                         true
-                    };
-                    let table_name: &str = row.get("table_name").unwrap_or_else(|| "");
-                    let table_schema: &str = row.get("table_schema").unwrap_or_else(|| "");
+                    };                   
                     let numeric_precision: i32 = row.get("numeric_precision").unwrap_or_else(|| 0);
                     let numeric_scale: i32 = row.get("numeric_scale").unwrap_or_else(|| 0);
                     data_schema.push(ColumnMembers::new(
                         Some(column_name.to_string()),
                         Some(data_type.to_string()),
                         Some(length_field),
-                        Some(description.to_string()),
-                        Some(constraint_name.to_string()),
-                        Some(constraint_type.to_string()),
-                        Some(is_nullable),
-                        Some(table_name.to_string()),
-                        Some(table_schema.to_string()),
+                        Some(is_nullable),                        
                         Some(numeric_precision),
                         Some(numeric_scale),
                     ));

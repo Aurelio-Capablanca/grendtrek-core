@@ -6,15 +6,14 @@ use crate::internals::data_structures::database_connector_spec::VendorOptions;
 pub struct Query {
     engine: VendorOptions,
     id: i32,
-    query: String,
-    note: String,
+    query: String
 }
 
 impl Query {
         
-    pub fn empty_query() -> Self {
-        Self { engine: VendorOptions::NONE, id: 0, query: String::new(), note: String::new() }
-    }
+    // pub fn empty_query() -> Self {
+    //     Self { engine: VendorOptions::NONE, id: 0, query: String::new() }
+    // }
     
     pub fn engine_out(&self) -> &VendorOptions{
         &self.engine

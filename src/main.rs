@@ -117,7 +117,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         translator::sql_server_to_pg::translate_ddl(&data_tables, types_translation)
             .unwrap_or(Vec::new());
     //ddl_issue.iter().for_each(|data| println!("DDL : {:?}",data));
-
     let write = ddl_issue.join(" \n");
     let file_exists =
         std::fs::metadata("/main_root/personal_projects/own/grendtrekk_writes_ddl/ddl.sql");
