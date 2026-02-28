@@ -1,7 +1,7 @@
 use crate::internals::data_structures::{
-    database_metadata::column_data::ColumnMembers, database_types::types::TypeMapper,
+    database_metadata::db_metadata::ColumnMembers, database_types::types::TypeMapper,
 };
-use std::collections::HashMap;
+
 
 fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
     let mut ddl_column = String::new();
@@ -51,46 +51,45 @@ pub fn translate_ddl(
     types_conversion: Vec<&TypeMapper>,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut ddl_content: Vec<String> = Vec::new();
-    let fields_table: HashMap<String, Vec<&ColumnMembers>> = struc_table
-        .iter()
-        .map(|data| {
-            (
-                data.get_table_name().to_string(),
-                struc_table
-                    .iter()
-                    .filter(|pred| {
-                        pred.get_table_name()
-                            .eq_ignore_ascii_case(data.get_table_name())
-                    })
-                    .collect::<Vec<&ColumnMembers>>(),
-            )
-        })
-        .collect::<HashMap<String, Vec<&ColumnMembers>>>();
-    fields_table.iter().for_each(|(key, value)| {
-        let mut ddl_table = String::new();
-        let col_schema_name = value
-            .iter()
-            .find(|pred| pred.get_table_name().eq_ignore_ascii_case(key))
-            .unwrap()
-            .get_table_schema()
-            .to_ascii_lowercase();
-        if col_schema_name.is_empty() {
-            ddl_table.push_str(&format!("create table public.\"{}\" (", key));
-        } else {
-            ddl_table.push_str(&format!(
-                "create table \"{}\".\"{}\" (",
-                col_schema_name, key
-            ));
-        }
-        let field_ddl = value
-            .iter()
-            .map(|data| build_columns(data, &types_conversion).unwrap_or("".to_string()))
-            .collect::<Vec<String>>()
-            .join(",");
-        ddl_table.push_str(&field_ddl);
-        ddl_table.push_str(" );");
-        ddl_content.push(ddl_table);
-    });
-
+    // let fields_table: HashMap<String, Vec<&ColumnMembers>> = struc_table
+    //     .iter()
+    //     .map(|data| {
+    //         (
+    //             data.get_table_name().to_string(),
+    //             struc_table
+    //                 .iter()
+    //                 .filter(|pred| {
+    //                     pred.get_table_name()
+    //                         .eq_ignore_ascii_case(data.get_table_name())
+    //                 })
+    //                 .collect::<Vec<&ColumnMembers>>(),
+    //         )
+    //     })
+    //     .collect::<HashMap<String, Vec<&ColumnMembers>>>();
+    // fields_table.iter().for_each(|(key, value)| {
+    //     let mut ddl_table = String::new();
+    //     let col_schema_name = value
+    //         .iter()
+    //         .find(|pred| pred.get_table_name().eq_ignore_ascii_case(key))
+    //         .unwrap()
+    //         .get_table_schema()
+    //         .to_ascii_lowercase();
+    //     if col_schema_name.is_empty() {
+    //         ddl_table.push_str(&format!("create table public.\"{}\" (", key));
+    //     } else {
+    //         ddl_table.push_str(&format!(
+    //             "create table \"{}\".\"{}\" (",
+    //             col_schema_name, key
+    //         ));
+    //     }
+    //     let field_ddl = value
+    //         .iter()
+    //         .map(|data| build_columns(data, &types_conversion).unwrap_or("".to_string()))
+    //         .collect::<Vec<String>>()
+    //         .join(",");
+    //     ddl_table.push_str(&field_ddl);
+    //     ddl_table.push_str(" );");
+    //     ddl_content.push(ddl_table);
+    // });
     Ok(ddl_content)
 }

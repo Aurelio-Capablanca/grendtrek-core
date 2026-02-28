@@ -1,5 +1,5 @@
 use crate::internals::data_structures::{
-    database_connector_spec::DatabaseHandlers, database_metadata::column_data::ColumnMembers,
+    database_connector_spec::DatabaseHandlers, database_metadata::db_metadata::ColumnMembers,
     database_types::query::Query,
 };
 
@@ -63,14 +63,14 @@ pub async fn get_table_by_schema(
                     };                   
                     let numeric_precision: i32 = row.get("numeric_precision").unwrap_or_else(|| 0);
                     let numeric_scale: i32 = row.get("numeric_scale").unwrap_or_else(|| 0);
-                    data_schema.push(ColumnMembers::new(
-                        Some(column_name.to_string()),
-                        Some(data_type.to_string()),
-                        Some(length_field),
-                        Some(is_nullable),                        
-                        Some(numeric_precision),
-                        Some(numeric_scale),
-                    ));
+                    // data_schema.push(ColumnMembers::new(
+                    //     Some(column_name.to_string()),
+                    //     Some(data_type.to_string()),
+                    //     Some(length_field),
+                    //     Some(is_nullable),                        
+                    //     Some(numeric_precision),
+                    //     Some(numeric_scale),
+                    // ));
                 }
             }
         }
