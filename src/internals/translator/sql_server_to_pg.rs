@@ -1,5 +1,5 @@
 use crate::internals::data_structures::{
-    database_metadata::db_metadata::ColumnMembers, database_types::types::TypeMapper,
+    database_metadata::db_metadata::cannonical_columns::ColumnMembers, database_types::types::TypeMapper,
 };
 
 
@@ -19,14 +19,14 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     ddl_column.push_str("\"");
     ddl_column.push_str(" ");
     ddl_column.push_str(field_type);
-    if column.get_lenght_field() > 0 {
+    if *column.get_lenght_field() > 0 {
         ddl_column.push_str("(");
         ddl_column.push_str(&column.get_lenght_field().to_string());
         ddl_column.push_str(")")
     }
     //precision read
-    if column.get_numeric_precision() > 0
-        && column.get_numeric_scale() > 0
+    if *column.get_numeric_precision() > 0
+        && *column.get_numeric_scale() > 0
         && types_conversion
             .iter()
             .any(|pred| pred.get_type_origin().eq(field_type))
