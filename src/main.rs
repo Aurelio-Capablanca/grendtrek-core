@@ -7,11 +7,10 @@ use crate::internals::{
     connections::connector::generate_connections,
     data_structures::{
         database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-        database_types::query::Query,
-        database_types::types::TypeMapper,
+        database_types::{query::Query, types::TypeMapper},
         db_reg::DatabaseRegistry,
     },
-    db_actions, translator,
+    db_actions::{self, sql_server_actions}, translator,
 };
 
 #[tokio::main]
@@ -72,7 +71,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //separate connections
     let origin = &mut entry_registries.origin;
     let destiny = &mut entry_registries.destiny;
-
+    
+    let sqlserver_cannon : Vec<&Query> = queries
+        .iter()
+        .filter(|pred| match pred.engine_out() {
+            VendorOptions::MSSQL => true,
+            _ => false
+        }).collect::<Vec<&Query>>();
+    let init_cannonical = sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
+    
     //--Get Schemas Action
     // let schema_query: &Query = queries.iter().find(|&pred| match pred.engine_out() {
     //     VendorOptions::MSSQL => true,
