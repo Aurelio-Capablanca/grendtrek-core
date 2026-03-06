@@ -37,7 +37,6 @@ pub async fn build_canonnical_schema(
                     .map(str::to_owned)
                     .unwrap_or_else(|| "no_schema".to_owned());
                 //--
-                //let ordering: Option<i32> = col.get("ordering");
                 let col_name: Option<&str> = col.get("column_name");
                 let data_type: Option<&str> = col.get("data_type");
                 let length_field: Option<i32> = col.get("length_field");
@@ -46,7 +45,12 @@ pub async fn build_canonnical_schema(
                 let collation: Option<&str> = col.get("collation_col");
                 let is_nullable: bool = col.get::<bool, _>("is_nullable").unwrap_or(false);
                 let is_identity: bool = col.get::<bool, _>("identity_col").unwrap_or(false);
-                let is_gen_always: bool = if col.get::<u8, _>("generated_always").unwrap_or(0u8).eq(&0u8) { false } else { true };
+                let is_gen_always: bool =
+                    if col.get::<u8, _>("generated_always").unwrap_or(0u8).eq(&0u8) {
+                        false
+                    } else {
+                        true
+                    };
                 let text_gen_alw: Option<&str> = col.get("text_generated_always");
                 let def_comp_val: Option<&str> = col.get("computed_col_value");
                 let key_table = (table_name.clone(), schema_name.clone());
@@ -94,7 +98,15 @@ pub async fn build_canonnical_schema(
                     });
             }
             //Get Cannonical PK
-
+            let pk_query: &&Query = query_list.iter().find(|pred| pred.id_out().eq(&3)).unwrap();
+            let pks = client_conn
+                .query(pk_query.query_out(), &[])
+                .await
+                .unwrap()
+                .into_first_result()
+                .await
+                .unwrap();
+            
             //Get Cannonical FK
             //Get Cannonical Indexes
             //Get Canonnical Constraints (Default/Check)
