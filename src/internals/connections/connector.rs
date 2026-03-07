@@ -27,7 +27,7 @@ pub async fn generate_connections(
         VendorOptions::MYSQL => {
             println!("No options available ! yet");
             DatabaseHandlers::None
-        },
+        }
         VendorOptions::NONE => {
             println!("No Option Available!");
             DatabaseHandlers::None
@@ -53,10 +53,10 @@ pub async fn generate_connections(
                 .unwrap();
             for action_s in actions {
                 for action in action_s {
-                    let result : i32 = action.get("result").unwrap();
-                    println!("SQL Server Result : {:?}",result);
+                    let result: i32 = action.get("result").unwrap();
+                    println!("SQL Server Result : {:?}", result);
                 }
-            }            
+            }
         }
         // DatabaseHandlers::MySql() => {
         //     println!("No active options yet!");
@@ -89,22 +89,28 @@ pub async fn create_posgres_conn(
     })
 }
 
-pub async fn create_mssql_conn(connector: DatabaseConnector) -> Result<MSSQLHandler, Box<dyn std::error::Error>> {
+pub async fn create_mssql_conn(
+    connector: DatabaseConnector,
+) -> Result<MSSQLHandler, Box<dyn std::error::Error>> {
     let mut configuration = tiberius::Config::new();
     configuration.host(connector.database_host);
-    let port : u16 = match &connector.database_port.parse::<u16>(){
-        Ok(val) => {
-            *val
-        },
+    let port: u16 = match &connector.database_port.parse::<u16>() {
+        Ok(val) => *val,
         Err(e) => {
-            println!("Not possible to convert    ! using default port! Error Message : {:?}",e);
+            println!(
+                "Not possible to convert    ! using default port! Error Message : {:?}",
+                e
+            );
             1433
         }
     };
-    
+
     configuration.port(port);
-    configuration.authentication(AuthMethod::sql_server(connector.database_user, connector.database_pass));
-    configuration.database(connector.database_name);    
+    configuration.authentication(AuthMethod::sql_server(
+        connector.database_user,
+        connector.database_pass,
+    ));
+    configuration.database(connector.database_name);
     configuration.trust_cert();
 
     let tcp = TcpStream::connect(configuration.get_addr()).await?;

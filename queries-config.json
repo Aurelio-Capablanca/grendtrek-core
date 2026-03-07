@@ -14,13 +14,13 @@
     {
       "engine" : "MSSQL",
       "id" : 3,
-      "query" : "SELECT c.name as table_origin_column, ts.name as table_name, (select t.name  from sys.tables t  where t.object_id  = fkc.referenced_object_id   ) as referrenced_table, (select c.name  from sys.columns c  where c.column_id = fkc.referenced_column_id and c.object_id  = fkc.referenced_object_id) as referenced_column, fk.name as fk__name, fk.is_disabled, fk.delete_referential_action, fk.update_referential_action FROM  sys.foreign_key_columns fkc LEFT JOIN sys.foreign_keys fk ON fkc.constraint_object_id = fk.object_id LEFT JOIN sys.columns c ON fkc.parent_object_id = c.object_id  AND fkc.parent_column_id = c.column_id LEFT JOIN sys.tables ts on ts.object_id  = c.object_id;",
+      "query" : "SELECT s.name as schema_name, c.name as table_origin_column, ts.name as table_name, (select t.name  from sys.tables t  where t.object_id  = fkc.referenced_object_id   ) as referrenced_table, (select c.name  from sys.columns c  where c.column_id = fkc.referenced_column_id and c.object_id  = fkc.referenced_object_id) as referenced_column, fk.name as fk__name, fk.is_disabled as disabled, fk.delete_referential_action as del_ref_act, fk.update_referential_action as upd_ref_act FROM  sys.foreign_key_columns fkc LEFT JOIN sys.foreign_keys fk ON fkc.constraint_object_id = fk.object_id LEFT JOIN sys.columns c ON fkc.parent_object_id = c.object_id  AND fkc.parent_column_id = c.column_id LEFT JOIN sys.tables ts on ts.object_id  = c.object_id JOIN sys.schemas s ON s.schema_id = ts.schema_id;",
       "note" : "Cannonical SQL Server Foreign Key"
     },
     {
       "engine" : "MSSQL",
       "id" : 4,
-      "query" : "SELECT s.name AS schema_name, t.name AS table_name, kc.name AS pk_name,c.name AS column_name, ty.name as data_type, ic.key_ordinal, yc.last_value as last_value, yc.increment_value as increment_by FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id = kc.parent_object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = kc.parent_object_id AND ic.index_id = kc.unique_index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id left join sys.identity_columns yc ON yc.object_id = c.object_id AND yc.column_id = c.column_id inner join sys.types ty on ty.user_type_id = c.user_type_id WHERE kc.type = 'PK' ORDER BY ic.key_ordinal, s.name;",
+      "query" : "SELECT s.name AS schema_name, t.name AS table_name, kc.name AS pk_name,c.name AS column_name, ty.name as data_type, ic.key_ordinal as key_ord, CAST(yc.last_value as int) as last_value, CAST(yc.increment_value as int) as increment_by FROM sys.key_constraints kc JOIN sys.tables t ON t.object_id = kc.parent_object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = kc.parent_object_id AND ic.index_id = kc.unique_index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id left join sys.identity_columns yc ON yc.object_id = c.object_id AND yc.column_id = c.column_id inner join sys.types ty on ty.user_type_id = c.user_type_id WHERE kc.type = 'PK' ORDER BY ic.key_ordinal, s.name;",
       "note" : "Cannonical SQL Server Primary Key"
     },
     {
@@ -30,9 +30,15 @@
       "note" : "Cannonical SQL Server Default Values"
     },
     {
+      "engine" : "MSSQL",
+      "id" : 6,
+      "query": "SELECT s.name AS schema_name,t.name AS table_name,cc.name AS constraint_name,cc.definition as def,cc.parent_column_id,c.name AS column_name,cc.is_disabled as is_disabled,cc.is_not_trusted as not_trust FROM sys.check_constraints cc JOIN sys.tables t ON t.object_id = cc.parent_object_id JOIN sys.schemas s ON s.schema_id = t.schema_id LEFT JOIN sys.columns c ON c.object_id = cc.parent_object_id AND c.column_id = cc.parent_column_id ORDER BY s.name, t.name, cc.name;",
+      "note" : "Cannonical SQL Server Check Values"
+    },
+    {
      "engine" : "MSSQL",
-     "id" : 6,
-     "query" : "SELECT s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_unique_constraint, i.filter_definition, i.is_disabled, ic.key_ordinal, ic.is_descending_key, ic.is_included_column, c.name AS column_name FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE i.type > 0 AND i.is_primary_key  = 0 ORDER BY s.name,t.name,i.name,ic.key_ordinal;",
-     "note" : "Cannonical SQL Server Primary Key"
+     "id" : 7,
+     "query" : "SELECT s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_unique_constraint as is_unique_constr, i.filter_definition as filter_desc, i.is_disabled as is_disabled, ic.key_ordinal as key_ord, ic.is_descending_key as desc_key, ic.is_included_column as inc_column, c.name AS column_name FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE i.type > 0 AND i.is_primary_key = 0 ORDER BY s.name,t.name,i.name,ic.key_ordinal;",
+     "note" : "Cannonical SQL Server Indexes"
     }
 ]
