@@ -1,19 +1,17 @@
-use std::{env};
+use std::{collections::HashMap, env};
 
 mod internals;
 mod outer;
 
-use crate::internals::{
-    data_structures::{
-        database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-        database_types::{query::Query, types::TypeMapper},
-        db_reg::DatabaseRegistry,
-    }
+use crate::internals::data_structures::{
+    database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
+    database_metadata::db_metadata::cannonical_tables::TableMetadata,
+    database_types::{query::Query, types::TypeMapper},
+    db_reg::DatabaseRegistry,
 };
 
 use crate::outer::databases::{
-    connections::connector::generate_connections,
-    db_actions::sql_server_actions
+    connections::connector::generate_connections, db_actions::sql_server_actions,
 };
 
 #[tokio::main]
@@ -74,25 +72,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //separate connections
     let origin = &mut entry_registries.origin;
     let destiny = &mut entry_registries.destiny;
-    
-    let sqlserver_cannon : Vec<&Query> = queries
+
+    let sqlserver_cannon: Vec<&Query> = queries
         .iter()
         .filter(|pred| match pred.engine_out() {
             VendorOptions::MSSQL => true,
-            _ => false
-        }).collect::<Vec<&Query>>();
-    let init_cannonical = sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
-    
-    //--Get Schemas Action
-    // let schema_query: &Query = queries.iter().find(|&pred| match pred.engine_out() {
-    //     VendorOptions::MSSQL => true,
-    //     _ => false,
-    // } && pred.id_out().eq(&2)
-    // ).unwrap();
-    // let schema_names = db_actions::sql_server_actions::get_all_schemas(origin, schema_query)
-    //     .await
-    //     .unwrap_or(Vec::new());
+            _ => false,
+        })
+        .collect::<Vec<&Query>>();
+    let init_cannonical: HashMap<(String, String), TableMetadata> =
+        sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
 
+    
+    // create schemas
+    // issue ddl
+    // create tables, fk's and pk's
+    // create indexes (alter table)
+    // create default values
+    // get bulks
+    // insert bulks
+    // create check values
+    // finish trekk
+ 
     /*
     let write = ddl_issue.join(" \n");
     let file_exists =
