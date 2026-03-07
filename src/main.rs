@@ -1,16 +1,19 @@
-use std::{env, io::Write};
+use std::{env};
 
 mod internals;
 mod outer;
 
 use crate::internals::{
-    connections::connector::generate_connections,
     data_structures::{
         database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
         database_types::{query::Query, types::TypeMapper},
         db_reg::DatabaseRegistry,
-    },
-    db_actions::{self, sql_server_actions}, translator,
+    }
+};
+
+use crate::outer::databases::{
+    connections::connector::generate_connections,
+    db_actions::sql_server_actions
 };
 
 #[tokio::main]
