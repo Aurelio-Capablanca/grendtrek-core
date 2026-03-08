@@ -3,12 +3,12 @@ use std::{collections::{HashMap, HashSet}, env};
 mod internals;
 mod outer;
 
-use crate::internals::data_structures::{
+use crate::{internals::data_structures::{
     database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
     database_metadata::db_metadata::cannonical_tables::TableMetadata,
     database_types::{query::Query, types::TypeMapper},
     db_reg::DatabaseRegistry,
-};
+}, outer::databases::db_actions::pg_actions};
 
 use crate::outer::databases::{
     connections::connector::generate_connections, db_actions::sql_server_actions,
@@ -100,9 +100,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<HashSet<_>>();
     schemas_cannonical.iter().for_each(|data| println!("{:?}",data));
     // 1.1 send to postgres 
-    
+    pg_actions::create_schemas(destiny, &schemas_cannonical).await.unwrap();
     // issue ddl
-        
+    
     // create tables, fk's and pk's
     // create indexes (alter table)
     // create default values
