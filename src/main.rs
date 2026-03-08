@@ -1,4 +1,4 @@
-use std::{collections::HashMap, env};
+use std::{collections::{HashMap, HashSet}, env};
 
 mod internals;
 mod outer;
@@ -80,12 +80,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => false,
         })
         .collect::<Vec<&Query>>();
-    let init_cannonical: HashMap<(String, String), TableMetadata> =
+    let canonnical_model: HashMap<(String, String), TableMetadata> =
         sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
 
+    canonnical_model
+        .iter()
+        .for_each(|data| {
+            let key = data.0;
+            println!("{:?}",key);
+        });
     
     // create schemas
+    let schemas_cannonical: HashSet<String> = canonnical_model
+        .iter()
+        .map(|data|{
+            let schema = data.0;
+            schema.1.clone()
+        })
+        .collect::<HashSet<_>>();
+    schemas_cannonical.iter().for_each(|data| println!("{:?}",data));
+    // 1.1 send to postgres 
+    
     // issue ddl
+        
     // create tables, fk's and pk's
     // create indexes (alter table)
     // create default values
@@ -93,7 +110,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // insert bulks
     // create check values
     // finish trekk
- 
+
     /*
     let write = ddl_issue.join(" \n");
     let file_exists =
