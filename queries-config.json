@@ -38,7 +38,7 @@
     {
      "engine" : "MSSQL",
      "id" : 7,
-     "query" : "SELECT s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.type_desc, i.is_unique, i.is_unique_constraint as is_unique_constr, i.filter_definition as filter_desc, i.is_disabled as is_disabled, ic.key_ordinal as key_ord, ic.is_descending_key as desc_key, ic.is_included_column as inc_column, c.name AS column_name FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE i.type > 0 AND i.is_primary_key = 0 ORDER BY s.name,t.name,i.name,ic.key_ordinal;",
+     "query" : "SELECT s.name AS schema_name, t.name AS table_name, i.name AS index_name, i.type_desc as type_desc, i.is_unique as is_unique, i.is_unique_constraint as is_unique_constr, i.filter_definition as filter_desc, i.is_disabled as is_disabled, ic.key_ordinal as key_ord, ic.is_descending_key as desc_key, ic.is_included_column as inc_column, c.name AS column_name FROM sys.indexes i JOIN sys.tables t ON t.object_id = i.object_id JOIN sys.schemas s ON s.schema_id = t.schema_id JOIN sys.index_columns ic ON ic.object_id = i.object_id AND ic.index_id = i.index_id JOIN sys.columns c ON c.object_id = ic.object_id AND c.column_id = ic.column_id WHERE i.type > 0 AND i.is_primary_key = 0 ORDER BY s.name,t.name,i.name,ic.key_ordinal;",
      "note" : "Cannonical SQL Server Indexes"
     }
 ]
