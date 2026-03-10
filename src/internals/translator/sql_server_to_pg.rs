@@ -1,9 +1,13 @@
+use std::collections::HashMap;
+
 use crate::internals::data_structures::{
-    database_metadata::db_metadata::cannonical_columns::ColumnMembers, database_types::types::TypeMapper,
+    database_metadata::db_metadata::{
+        cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata,
+    },
+    database_types::types::TypeMapper,
 };
 
-
-fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
+fn build_columns_deprc(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
     let mut ddl_column = String::new();
     let backup = &&TypeMapper::empty_struct();
     let field_type: &str = types_conversion
@@ -43,29 +47,21 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     }
     Some(ddl_column)
 }
-#[allow(dead_code)]
+
 fn build_constraints() {}
 
+fn build_pks() {}
+
 pub fn translate_ddl(
-    struc_table: &Vec<ColumnMembers>,
+    structs_table: &HashMap<(String, String), TableMetadata>,
     types_conversion: Vec<&TypeMapper>,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut ddl_content: Vec<String> = Vec::new();
-    // let fields_table: HashMap<String, Vec<&ColumnMembers>> = struc_table
-    //     .iter()
-    //     .map(|data| {
-    //         (
-    //             data.get_table_name().to_string(),
-    //             struc_table
-    //                 .iter()
-    //                 .filter(|pred| {
-    //                     pred.get_table_name()
-    //                         .eq_ignore_ascii_case(data.get_table_name())
-    //                 })
-    //                 .collect::<Vec<&ColumnMembers>>(),
-    //         )
-    //     })
-    //     .collect::<HashMap<String, Vec<&ColumnMembers>>>();
+    for struct_tb in structs_table {
+        let mut ddl_generation = String::new();
+        
+    }
+    
     // fields_table.iter().for_each(|(key, value)| {
     //     let mut ddl_table = String::new();
     //     let col_schema_name = value
