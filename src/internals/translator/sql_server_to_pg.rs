@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use crate::internals::data_structures::{
-    database_metadata::db_metadata::{
+    database_metadata::{constraint_metadata::SQLConstraints, db_metadata::{
         cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata,
-    },
+    }},
     database_types::types::TypeMapper,
 };
 
@@ -48,6 +48,11 @@ fn build_columns_deprc(column: &ColumnMembers, types_conversion: &Vec<&TypeMappe
     Some(ddl_column)
 }
 
+fn build_columns() -> Option<String> {
+    
+    Some(String::new())
+}
+
 fn build_constraints() {}
 
 fn build_pks() {}
@@ -59,6 +64,23 @@ pub fn translate_ddl(
     let mut ddl_content: Vec<String> = Vec::new();
     for struct_tb in structs_table {
         let mut ddl_generation = String::new();
+        let table_keys : &(String, String) = struct_tb.0;
+        let table_metadata : &TableMetadata = struct_tb.1;
+        let columns = table_metadata.get_cols_as_ref();
+        for column in columns {
+            if table_metadata.get_constrs().iter().any(|pred| match pred {
+                SQLConstraints::PRIMARYKEY(pk) => {
+                    pk.get_col_name_as_ref().eq(column.get_column_name())
+                },
+                _=> { false }
+            }) {
+                //PK column
+                /*Use Serial as Type instead of the numercal given one! */
+            } else {
+                // regular column!
+                
+            }
+        }
         
     }
     
