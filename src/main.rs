@@ -100,7 +100,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .collect::<HashSet<_>>();
     schemas_cannonical.iter().for_each(|data| println!("{:?}",data));
     // 1.1 send to postgres 
-    pg_actions::create_schemas(destiny, &schemas_cannonical).await.unwrap();
+    let action = pg_actions::create_schemas(destiny, &schemas_cannonical).await;
+    match action {
+        Ok(_) => {
+            println!("Schemas Created!");
+        },
+        Err(err) => {
+            println!("Error at creating schemas : {:?}",err)
+        }
+        
+    }
     // issue ddl
     
     // create tables, fk's and pk's
