@@ -27,7 +27,6 @@ pub enum DatabaseHandlers{
     None
 }
 
-
 //Vendors
 #[derive(Debug, Deserialize)]
 pub enum VendorOptions{
