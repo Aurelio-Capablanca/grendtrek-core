@@ -1,14 +1,20 @@
-use std::{collections::{HashMap, HashSet}, env};
+use std::{
+    collections::{HashMap, HashSet},
+    env,
+};
 
 mod internals;
 mod outer;
 
-use crate::{internals::data_structures::{
-    database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-    database_metadata::db_metadata::cannonical_tables::TableMetadata,
-    database_types::{query::Query, types::TypeMapper},
-    db_reg::DatabaseRegistry,
-}, outer::databases::db_actions::pg_actions};
+use crate::{
+    internals::data_structures::{
+        database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
+        database_metadata::db_metadata::cannonical_tables::TableMetadata,
+        database_types::{query::Query, types::TypeMapper},
+        db_reg::DatabaseRegistry,
+    },
+    outer::databases::db_actions::pg_actions,
+};
 
 use crate::outer::databases::{
     connections::connector::generate_connections, db_actions::sql_server_actions,
@@ -83,35 +89,35 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let canonnical_model: HashMap<(String, String), TableMetadata> =
         sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
 
-    canonnical_model
-        .iter()
-        .for_each(|data| {
-            let key = data.0;
-            println!("{:?}",key);
-        });
-    
+    canonnical_model.iter().for_each(|data| {
+        let key = data.0;
+        let value = data.1;
+        println!("{:?} \n {:?}", key, value);
+    });
+
     // create schemas
     let schemas_cannonical: HashSet<String> = canonnical_model
         .iter()
-        .map(|data|{
+        .map(|data| {
             let schema = data.0;
             schema.1.clone()
         })
         .collect::<HashSet<_>>();
-    schemas_cannonical.iter().for_each(|data| println!("{:?}",data));
-    // 1.1 send to postgres 
+    schemas_cannonical
+        .iter()
+        .for_each(|data| println!("{:?}", data));
+    // 1.1 send to postgres
     let action = pg_actions::create_schemas(destiny, &schemas_cannonical).await;
     match action {
         Ok(_) => {
             println!("Schemas Created!");
-        },
-        Err(err) => {
-            println!("Error at creating schemas : {:?}",err)
         }
-        
+        Err(err) => {
+            println!("Error at creating schemas : {:?}", err)
+        }
     }
     // issue ddl
-    
+
     // create tables, fk's and pk's
     // create indexes (alter table)
     // create default values
