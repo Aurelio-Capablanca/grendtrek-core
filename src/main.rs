@@ -7,11 +7,14 @@ mod internals;
 mod outer;
 
 use crate::{
-    internals::data_structures::{
-        database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-        database_metadata::db_metadata::cannonical_tables::TableMetadata,
-        database_types::{query::Query, types::TypeMapper},
-        db_reg::DatabaseRegistry,
+    internals::{
+        data_structures::{
+            database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
+            database_metadata::db_metadata::cannonical_tables::TableMetadata,
+            database_types::{query::Query, types::TypeMapper},
+            db_reg::DatabaseRegistry,
+        },
+        translator::sql_server_to_pg,
     },
     outer::databases::db_actions::pg_actions,
 };
@@ -117,7 +120,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     // issue ddl
+    let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
+        VendorOptions::MSSQL => true,
+        _=> false
+    }  &&
+    match  pred.get_destiny_engine() {
+        VendorOptions::POSTGRES => true,
+        _=> false,
+    }
+    ).collect::<Vec<&TypeMapper>>();
+    let ddl_for_pg = sql_server_to_pg::translate_ddl(&canonnical_model, type_conversion);
 
+    match ddl_for_pg {
+        Ok(value) => {
+            value.iter().for_each(|data| println!("{:?} \n",data) )
+        }
+        Err(err) => {
+            println!("{:?}",err)
+        }
+    }
     // create tables, fk's and pk's
     // create indexes (alter table)
     // create default values

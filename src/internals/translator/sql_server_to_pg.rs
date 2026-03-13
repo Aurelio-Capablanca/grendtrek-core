@@ -16,7 +16,9 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     column_ddl.push_str(" ");
     column_ddl.push_str(column.get_data_type());
     if column.get_lenght_field() > &0 {
+        column_ddl.push_str("(");
         column_ddl.push_str(&column.get_lenght_field().to_string());
+        column_ddl.push_str(") ");
     }
     if column.get_numeric_precision() > &0
         && column.get_numeric_scale() > &0
@@ -54,17 +56,23 @@ pub fn translate_ddl(
     types_conversion: Vec<&TypeMapper>,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut ddl_content: Vec<String> = Vec::new();
-    for (index_canonnical, struct_tb) in structs_table.iter().enumerate() {
+    
+    structs_table.iter().for_each(|struct_table| {
         let mut ddl_generation = String::new();
-        let table_keys: &(String, String) = struct_tb.0;
-        let table_metadata: &TableMetadata = struct_tb.1;
+        let table_keys: &(String, String) = struct_table.0;
+        let table_metadata: &TableMetadata = struct_table.1;
         let columns = table_metadata.get_cols_as_ref();
         ddl_generation.push_str("create table \"");
-        ddl_generation.push_str(&table_keys.0);
-        ddl_generation.push_str("\".\"");
         ddl_generation.push_str(&table_keys.1);
+        ddl_generation.push_str("\".\"");
+        ddl_generation.push_str(&table_keys.0);
         ddl_generation.push_str("\" (");
-        for (index_column, column) in columns.iter().enumerate() {
+        // let total_size : usize = columns.len();
+        // for (index_column, column) in columns.iter().enumerate() {
+            
+        // }
+        let field_spec = columns.iter().map(|column| {
+            let mut field : String = String::new();
             if table_metadata.get_constrs().iter().any(|pred| match pred {
                 SQLConstraints::PRIMARYKEY(pk) => {
                     pk.get_col_name_as_ref().eq(column.get_column_name())
@@ -72,18 +80,20 @@ pub fn translate_ddl(
                 _ => false,
             }) {
                 //PK column
-                /*Use Serial as Type instead of the numercal given one! */
+                /*Use Serial as Type instead of the numercal given one! */                
             } else {
                 // regular column!
-                let field = match build_columns(column, &types_conversion) {
+                field = match build_columns(column, &types_conversion) {
                     Some(val) => val,
                     None => "".to_string(),
-                };
-                ddl_generation.push_str(&field);
+                };                               
             }
-        }
+            field
+        }).collect::<Vec<String>>().join(",");
+        ddl_generation.push_str(&field_spec);
         ddl_generation.push_str(")");
-        ddl_content.push(ddl_generation);
-    }
+        ddl_content.push(ddl_generation); 
+    });
+    
     Ok(ddl_content)
 }
