@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => false,
         })
         .collect::<Vec<&Query>>();
-    let canonnical_model: HashMap<(String, String), TableMetadata> =
+    let mut canonnical_model: HashMap<(String, String), TableMetadata> =
         sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
 
     canonnical_model.iter().for_each(|data| {
@@ -129,7 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _=> false,
     }
     ).collect::<Vec<&TypeMapper>>();
-    let ddl_for_pg = sql_server_to_pg::translate_ddl(&canonnical_model, type_conversion);
+    let ddl_for_pg = sql_server_to_pg::translate_ddl(&mut canonnical_model, type_conversion);
 
     match ddl_for_pg {
         Ok(value) => {
