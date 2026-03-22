@@ -182,5 +182,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create check values
     // finish trekk
 
+    // test for actions
+
+    
+    
     Ok(())
 }
