@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     env,
+    io::Write,
 };
 
 mod internals;
@@ -129,26 +130,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _=> false,
     }
     ).collect::<Vec<&TypeMapper>>();
-    let ddl_for_pg = sql_server_to_pg::translate_ddl(&mut canonnical_model, type_conversion);
-
-    match ddl_for_pg {
+    let ddl_for_pg = match sql_server_to_pg::translate_ddl(&mut canonnical_model, type_conversion) {
         Ok(value) => {
-            value.iter().for_each(|data| println!("{:?} \n",data) )
+            value.iter().for_each(|data| println!("{:?} \n", data));
+            value
         }
         Err(err) => {
-            println!("{:?}",err)
+            println!("{:?}", err);
+            Vec::new()
         }
-    }
-    // create tables, fk's and pk's
-    // create indexes (alter table)
-    // create default values
-    // get bulks
-    // insert bulks
-    // create check values
-    // finish trekk
+    };
 
-    /*
-    let write = ddl_issue.join(" \n");
+    // mock save the results of the DDL reconstruction
+    let write = ddl_for_pg.join(" \n");
     let file_exists =
         std::fs::metadata("/main_root/personal_projects/own/grendtrekk_writes_ddl/ddl.sql");
 
@@ -178,7 +172,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Error Writting file log DDL : {:?}", err)
         }
     }
-     */
+
+    // create tables, fk's and pk's
+
+    // create indexes (alter table)
+    // create default values
+    // get bulks
+    // insert bulks
+    // create check values
+    // finish trekk
 
     Ok(())
 }

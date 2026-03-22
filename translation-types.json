@@ -19,5 +19,117 @@
     "type_origin": "int",
     "type_destiny": "INTEGER",
     "is_precision": false
-  }
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "tinyint",
+    "type_destiny": "SMALLINT",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "datetime",
+    "type_destiny": "TIMESTAMP",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "xml",
+    "type_destiny": "TEXT",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "money",
+    "type_destiny": "NUMERIC",
+    "is_precision": true
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "uniqueidentifier",
+    "type_destiny": "UUID",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "nchar",
+    "type_destiny": "CHAR",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "geography",
+    "type_destiny": "TEXT",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "bit",
+    "type_destiny": "BOOLEAN",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "smallmoney",
+    "type_destiny": "NUMERIC",
+    "is_precision": true
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "decimal",
+    "type_destiny": "DECIMAL",
+    "is_precision": true
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "hierarchyid",
+    "type_destiny": "TEXT",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "smallint",
+    "type_destiny": "SMALLINT",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "numeric",
+    "type_destiny": "NUMERIC",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "date",
+    "type_destiny": "DATE",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "time",
+    "type_destiny": "TIME",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "varbinary",
+    "type_destiny": "BIT",
+    "is_precision": false
+  }  
 ]
