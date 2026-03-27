@@ -52,6 +52,12 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     Some(column_ddl)
 }
 
+fn build_collation_mod() -> Option<Vec<String>>{
+    
+    Some(Vec::new())
+}
+
+
 fn build_constraints() {}
 
 fn build_pks(
