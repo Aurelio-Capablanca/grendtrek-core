@@ -1,0 +1,24 @@
+Precision Numericals:
+"NUMERIC".to_string(),
+"DECIMAL".to_string();
+
+Regular Types: 
+"nvarchar".to_string() => "VARCHAR".to_string(),
+"varchar".to_string() => "VARCHAR".to_string(),
+"int".to_string() => "INTEGER".to_string(),
+"tinyint".to_string() => "SMALLINT".to_string(),
+"datetime".to_string() => "TIMESTAMP".to_string(),
+"xml".to_string() => "TEXT".to_string(),
+"money".to_string() => "NUMERIC".to_string(),
+"uniqueidentifier".to_string() => "UUID".to_string(),
+"nchar".to_string() => "CHAR".to_string(),
+"geography".to_string() => "GEOGRAPHY".to_string(),
+"bit".to_string() => "BOOLEAN".to_string(),
+"smallmoney".to_string() => "NUMERIC".to_string(),
+"decimal".to_string() => "DECIMAL".to_string(),
+"hierarchyid".to_string() => "LTREE".to_string(),
+"smallint".to_string() => "SMALLINT".to_string(),
+"numeric".to_string() => "NUMERIC".to_string(),
+"date".to_string() => "DATE".to_string(),
+"time".to_string() => "TIME".to_string(),
+"varbinary".to_string() => "BIT".to_string()

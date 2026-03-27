@@ -1,0 +1,38 @@
+{
+  "SQL_Latin1_General_CP1_CI_AS": {
+    "provider": "icu",
+    "locale": "en-u-ks-level2",
+    "deterministic": false,
+    "description": "Case-Insensitive, Accent-Sensitive. 'level2' ignores case but distinguishes accents."
+  },
+  "Latin1_General_CS_AS": {
+    "provider": "icu",
+    "locale": "en-u-ks-level3",
+    "deterministic": true,
+    "description": "Case-Sensitive, Accent-Sensitive. Standard PG behavior; level3 is strict."
+  },
+  "Latin1_General_CI_AS_KS_WS": {
+    "provider": "icu",
+    "locale": "en-u-ks-level2-kk-true",
+    "deterministic": false,
+    "description": "CI_AS with Kana Sensitivity (KS). 'kk-true' enables Kana distinction in ICU."
+  },
+  "SQL_Latin1_General_CP437_CS_AS": {
+    "provider": "icu",
+    "locale": "en-u-ks-level3",
+    "deterministic": true,
+    "description": "Code Page 437 is legacy; ICU handles the characters natively at level3 sensitivity."
+  },
+  "UNICODE_CODEPOINT": {
+    "provider": "builtin",
+    "locale": "ucs_basic",
+    "deterministic": true,
+    "description": "Maps to PG's ucs_basic which sorts strictly by Unicode code point values."
+  },
+  "Latin1_General_BIN": {
+    "provider": "libc",
+    "locale": "C",
+    "deterministic": true,
+    "description": "Binary sort. The 'C' or 'POSIX' locale is the direct PG equivalent for BIN."
+  }
+}
