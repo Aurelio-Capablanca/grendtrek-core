@@ -96,22 +96,7 @@ pub mod cannonical_tables {
         
         pub fn add_pk(&mut self, pk: IdentitySpecification) {            
             self.constraints.push(SQLConstraints::PRIMARYKEY(pk));
-            // if let Some(SQLConstraints::PRIMARYKEY(val)) = self.constraints.iter_mut().find(|pred| match pred {
-            //     SQLConstraints::PRIMARYKEY(pks) => {
-            //         if pks.get_table_name().eq(&table_name) {
-            //             true
-            //         } else {
-            //             false
-            //         }                    
-            //     },
-            //     _ => false,
-            // }) {
-                
-            // } else {
-            //     self.constraints.push(SQLConstraints::PRIMARYKEY(pk));
-            // }
         }
-
         
         pub fn get_table_name(&self) -> &str {
             &self.table_name.as_ref()
