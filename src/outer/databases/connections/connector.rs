@@ -1,6 +1,9 @@
+use std::io::Error;
+
 use crate::internals::data_structures::database_connector_spec::{
     DatabaseConnector, DatabaseHandlers, MSSQLHandler, PgHandler, VendorOptions,
 };
+use deadpool_postgres::{Config, Pool};
 use tiberius::{AuthMethod, Client};
 use tokio::net::TcpStream;
 use tokio_postgres::NoTls;
@@ -87,6 +90,19 @@ pub async fn create_posgres_conn(
         client: client,
         _handler: handler,
     })
+}
+
+pub fn create_postgres_pool_connection(
+    connector: DatabaseConnector,
+) -> Result<Pool, Box<dyn std::error::Error>> {
+    let mut pg_config = Config::new();
+    pg_config.host = Some(connector.database_host);
+    pg_config.port = connector.database_port.parse::<u16>().ok();
+    pg_config.dbname = Some(connector.database_name);
+    pg_config.user = Some(connector.database_user);
+    pg_config.password = Some(connector.database_pass);    
+    let pool = pg_config.create_pool(Some(deadpool_postgres::Runtime::Tokio1), NoTls)?;
+    Ok(pool)
 }
 
 pub async fn create_mssql_conn(

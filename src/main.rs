@@ -11,7 +11,7 @@ use crate::{
     internals::{
         data_structures::{
             database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-            database_metadata::db_metadata::cannonical_tables::TableMetadata,
+            database_metadata::{db_metadata::cannonical_tables::TableMetadata, table_data::TableData},
             database_types::{query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
         },
@@ -26,7 +26,11 @@ use crate::outer::databases::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //.ENV settings:
+    //Don't panic! 
+    // let table_value: TableData<i32> = TableData::new("a_table".to_string(), "a_value".to_string(), 100_i32);
+    // print!("{:?}",table_value);
+    
+    //.ENV settings:    
     dotenvy::dotenv().ok();
     let feature = env::var("FEATURES").expect("No loaded line");
     let type_path_file = env::var("TYPES_PATH").expect("translation-types.json");

@@ -10,4 +10,21 @@ cargo add tokio-util --features full
 cargo add deadpool-postgres
 cargo add tokio-postgres
 
+##Pool Dependencies 
+
+##For PostgreSQL 
+cargo add deadpool-postgres
+cargo add deadpool --features rt_tokio_1
+
+##For SQL Server 
+cargo add tiberius --features rustls,chrono
+cargo add bb8
+cargo add bb8-tiberius
+
+
+
+## Not add 
+cargo add tokio-postgres
+cargo add tokio --features full
+cargo add tokio-util --features compat
 

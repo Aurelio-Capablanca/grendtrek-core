@@ -4,10 +4,14 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+bb8 = "0.9.1"
+bb8-tiberius = "0.16.0"
+deadpool = { version = "0.13.0", features = ["rt_tokio_1"] }
+deadpool-postgres = "0.14.1"
 dotenvy = "0.15.7"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-tiberius = "0.12.3"
+tiberius = { version = "0.12.3", features = ["rustls", "chrono"] }
 tokio = { version = "1.49.0", features = ["full"] }
 tokio-postgres = "0.7.16"
 tokio-util = { version = "0.7.18", features = ["full"] }
