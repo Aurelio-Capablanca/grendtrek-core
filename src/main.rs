@@ -87,6 +87,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let origin = &mut entry_registries.origin;
     let destiny = &mut entry_registries.destiny;
 
+    
+    /*
     let sqlserver_cannon: Vec<&Query> = queries
         .iter()
         .filter(|pred| match pred.engine_out() {
@@ -187,7 +189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // finish trekk
 
     // test for actions
-
+*/
     
     
     Ok(())

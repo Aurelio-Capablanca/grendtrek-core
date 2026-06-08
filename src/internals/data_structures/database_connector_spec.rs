@@ -1,6 +1,6 @@
-use bb8::Pool;
+use bb8::Pool as bb8Pool;
 use bb8_tiberius::ConnectionManager;
-use deadpool_postgres::Pool;
+use deadpool_postgres::Pool as dpPool;
 use tokio::net::TcpStream;
 use serde::Deserialize;
 
@@ -20,7 +20,7 @@ pub struct PgHandler{
 }
 
 pub struct PgPoolHandler {
-    pub pg_pool : Pool
+    pub pg_pool : dpPool
 }
 
 
@@ -29,13 +29,15 @@ pub struct MSSQLHandler{
 }
 
 pub struct MSSQLPoolHandler{
-    pub mssql_pool : Pool<ConnectionManager>
+    pub mssql_pool : bb8Pool<ConnectionManager>
 } 
 
 //DB enums declaration:
 pub enum DatabaseHandlers{
     Postgres(PgHandler),
+    PostgresPool(PgPoolHandler),
     SqlServer(MSSQLHandler),
+    SqlServerPool(MSSQLPoolHandler),
     //_MySql(),
     None
 }
