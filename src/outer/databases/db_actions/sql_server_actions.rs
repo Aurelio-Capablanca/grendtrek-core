@@ -17,8 +17,8 @@ pub async fn build_canonnical_schema(
 ) -> Result<HashMap<(String, String), TableMetadata>, Box<dyn std::error::Error>> {
     let mut tables: HashMap<(String, String), TableMetadata> = HashMap::new();
     match connection {
-        DatabaseHandlers::SqlServer(client) => {
-            let client_conn = &mut client.client;
+        DatabaseHandlers::SqlServerPool(client) => {
+            let client_conn = &mut client.mssql_pool.get().await.unwrap();
             //Get Canonnical Columns
             let col_query = query_list.iter().find(|pred| pred.id_out().eq(&2)).unwrap();
             let cols = client_conn

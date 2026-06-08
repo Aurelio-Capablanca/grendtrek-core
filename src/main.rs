@@ -11,7 +11,9 @@ use crate::{
     internals::{
         data_structures::{
             database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-            database_metadata::{db_metadata::cannonical_tables::TableMetadata, table_data::TableData},
+            database_metadata::{
+                db_metadata::cannonical_tables::TableMetadata, /*table_data::TableData,*/
+            },
             database_types::{query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
         },
@@ -26,15 +28,15 @@ use crate::outer::databases::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //Don't panic! 
+    //Don't panic!
     // let table_value: TableData<i32> = TableData::new("a_table".to_string(), "a_value".to_string(), 100_i32);
     // print!("{:?}",table_value);
-    
-    //.ENV settings:    
+
+    //.ENV settings:
     dotenvy::dotenv().ok();
     let feature = env::var("FEATURES").expect("No loaded line");
     let type_path_file = env::var("TYPES_PATH").expect("translation-types.json");
-    let query_path_file = env::var("QUERY_PATH").expect("translation-types.json");
+    let query_path_file = env::var("QUERY_PATH").expect("queries-config.json");
     println!(
         "line loaded : {:?} , {:?}, {:?}",
         feature, type_path_file, query_path_file
@@ -87,8 +89,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let origin = &mut entry_registries.origin;
     let destiny = &mut entry_registries.destiny;
 
-    
-    /*
     let sqlserver_cannon: Vec<&Query> = queries
         .iter()
         .filter(|pred| match pred.engine_out() {
@@ -128,14 +128,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // issue ddl
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
-        VendorOptions::MSSQL => true,
-        _=> false
-    }  &&
-    match  pred.get_destiny_engine() {
-        VendorOptions::POSTGRES => true,
-        _=> false,
-    }
-    ).collect::<Vec<&TypeMapper>>();
+            VendorOptions::MSSQL => true,
+            _=> false
+        }  &&
+        match  pred.get_destiny_engine() {
+            VendorOptions::POSTGRES => true,
+            _=> false,
+        }
+        ).collect::<Vec<&TypeMapper>>();
     let ddl_for_pg = match sql_server_to_pg::translate_ddl(&mut canonnical_model, type_conversion) {
         Ok(value) => {
             value.iter().for_each(|data| println!("{:?} \n", data));
@@ -189,8 +189,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // finish trekk
 
     // test for actions
-*/
-    
-    
+
     Ok(())
 }

@@ -7,8 +7,8 @@ pub async fn create_schemas(
     schema_names: &HashSet<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match connection {
-        DatabaseHandlers::Postgres(client) => {
-            let pg_client = &mut client.client;
+        DatabaseHandlers::PostgresPool(client) => {
+            let pg_client = &mut client.pg_pool.get().await.unwrap();
             let tx = pg_client.transaction().await.unwrap();
             for schema_name in schema_names {
                 let raw = format!("CREATE SCHEMA {}",schema_name);
