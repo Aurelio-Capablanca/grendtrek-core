@@ -1,7 +1,7 @@
 use bb8::Pool as bb8Pool;
 use bb8_tiberius::ConnectionManager;
 use deadpool_postgres::Pool as dpPool;
-use tokio::net::TcpStream;
+//use tokio::net::TcpStream;
 use serde::Deserialize;
 
 //connector metadata: 
@@ -14,19 +14,19 @@ pub struct DatabaseConnector {
 }
 
 //Handlers:
-pub struct PgHandler{
-    pub client: tokio_postgres::Client,
-    pub _handler: tokio::task::JoinHandle<()>,
-}
+// pub struct PgHandler{
+//     pub client: tokio_postgres::Client,
+//     pub _handler: tokio::task::JoinHandle<()>,
+// }
 
 pub struct PgPoolHandler {
     pub pg_pool : dpPool
 }
 
 
-pub struct MSSQLHandler{
-    pub client : tiberius::Client<tokio_util::compat::Compat<TcpStream>>,
-}
+// pub struct MSSQLHandler{
+//     pub client : tiberius::Client<tokio_util::compat::Compat<TcpStream>>,
+// }
 
 pub struct MSSQLPoolHandler{
     pub mssql_pool : bb8Pool<ConnectionManager>
@@ -34,9 +34,9 @@ pub struct MSSQLPoolHandler{
 
 //DB enums declaration:
 pub enum DatabaseHandlers{
-    Postgres(PgHandler),
+   // Postgres(PgHandler),
     PostgresPool(PgPoolHandler),
-    SqlServer(MSSQLHandler),
+    //SqlServer(MSSQLHandler),
     SqlServerPool(MSSQLPoolHandler),
     //_MySql(),
     None

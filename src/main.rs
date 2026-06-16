@@ -12,7 +12,7 @@ use crate::{
         data_structures::{
             database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
             database_metadata::{
-                db_metadata::cannonical_tables::TableMetadata, /*table_data::TableData,*/
+                db_metadata::cannonical_tables::TableMetadata, table_data::TableData,
             },
             database_types::{query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
@@ -27,10 +27,9 @@ use crate::outer::databases::{
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    //Don't panic!
-    // let table_value: TableData<i32> = TableData::new("a_table".to_string(), "a_value".to_string(), 100_i32);
-    // print!("{:?}",table_value);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {    
+     let table_value: TableData<i32> = TableData::new("a_table".to_string(), "a_value".to_string(), 100_i32);
+     print!("{:?}",table_value);
 
     //.ENV settings:
     dotenvy::dotenv().ok();
@@ -150,17 +149,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // mock save the results of the DDL reconstruction
     let write = ddl_for_pg.join(" \n");
     let file_exists =
-        std::fs::metadata("/main_root/personal_projects/own/grendtrekk_writes_ddl/ddl.sql");
+        std::fs::metadata("/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql");
 
     let file_ddl = match file_exists {
         Ok(metadata) => {
             println!("{:?}", metadata);
-            std::fs::File::create("/main_root/personal_projects/own/grendtrekk_writes_ddl/ddl.sql")
+            std::fs::File::create("/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql")
         }
         Err(_) => {
             println!("File Already Exists, only writting at it");
             std::fs::File::create_new(
-                "/main_root/personal_projects/own/grendtrekk_writes_ddl/ddl.sql",
+                "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql",
             )
         }
     };
