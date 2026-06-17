@@ -5,10 +5,13 @@ use crate::internals::data_structures::{
         constraint_metadata::{IdentitySpecification, SQLConstraints},
         db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
     },
-    database_types::types::TypeMapper,
+    database_types::{collation::Collations, types::TypeMapper},
 };
 
-fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
+fn build_columns(
+    column: &ColumnMembers,
+    types_conversion: &Vec<&TypeMapper>
+) -> Option<String> {
     let mut column_ddl = String::new();
     column_ddl.push_str("\"");
     column_ddl.push_str(column.get_column_name());
@@ -41,7 +44,7 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     column_ddl.push_str(" ");
     if !column.get_collation().is_empty() {
         column_ddl.push_str("COLLATE \"");
-        column_ddl.push_str(column.get_collation()); //collation has to be translated to PostgreSQL one (inbuilt dict, no given JSON)
+        column_ddl.push_str(column.get_collation()); 
         column_ddl.push_str("\"  ");
     }
     if *column.get_is_nullable() {
@@ -52,11 +55,9 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     Some(column_ddl)
 }
 
-fn build_collation_mod() -> Option<Vec<String>>{
-    
-    Some(Vec::new())
+fn build_collation_mod() -> Option<String> {
+    Some(String::new())
 }
-
 
 fn build_constraints() {}
 
@@ -65,7 +66,7 @@ fn build_pks(
     pk_col: &IdentitySpecification,
     mapper_type: &Vec<&TypeMapper>,
 ) -> String {
-    let mut pk_ddl = String::new();    
+    let mut pk_ddl = String::new();
     pk_ddl.push_str("\"");
     pk_ddl.push_str(pk_col.get_col_name_as_ref());
     pk_ddl.push_str("\"");
@@ -110,7 +111,7 @@ fn build_pks(
 
 pub fn translate_ddl(
     structs_table: &HashMap<(String, String), TableMetadata>,
-    types_conversion: Vec<&TypeMapper>,
+    types_conversion: Vec<&TypeMapper>
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut ddl_content: Vec<String> = Vec::new();
     structs_table.iter().for_each(|struct_table| {
