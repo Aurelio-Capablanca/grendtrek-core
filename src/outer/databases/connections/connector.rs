@@ -6,9 +6,7 @@ use bb8::Pool as bb8Pool;
 use bb8_tiberius::ConnectionManager;
 use deadpool_postgres::{Config};
 use tiberius::{AuthMethod};
-//use tokio::net::TcpStream;
 use tokio_postgres::NoTls; 
-//use tokio_util::compat::TokioAsyncWriteCompatExt;
 
 pub async fn generate_connections(
     connector: DatabaseConnector,

@@ -61,6 +61,10 @@ impl IdentitySpecification {
         }
     }
 
+    pub fn get_pk_name_as_ref(&self) -> &str {
+        &self.pk_name
+    }
+    
     pub fn get_type_pk_as_ref(&self) -> &str {
         &self.data_type
     }

@@ -1,0 +1,15 @@
+[
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "collation_origin": { "MSSQL": "SQL_Latin1_General_CP1_CI_AS" },
+    "collation_destiny": {
+      "POSTGRES": {
+        "provider": "icu",
+        "locale": "en-u-ks-level2",
+        "deterministic": false,
+        "description": "Case-Insensitive, Accent-Sensitive. 'level2' ignores case but distinguishes accents."
+      }
+    }
+  }
+]

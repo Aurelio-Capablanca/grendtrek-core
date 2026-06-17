@@ -14,7 +14,7 @@ use crate::{
             database_metadata::{
                 db_metadata::cannonical_tables::TableMetadata, table_data::TableData,
             },
-            database_types::{query::Query, types::TypeMapper},
+            database_types::{collation::Collations, query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
         },
         translator::sql_server_to_pg,
@@ -27,33 +27,57 @@ use crate::outer::databases::{
 };
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {    
-     let table_value: TableData<i32> = TableData::new("a_table".to_string(), "a_value".to_string(), 100_i32);
-     print!("{:?}",table_value);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let table_value: TableData<i32> =
+        TableData::new("a_table".to_string(), "a_value".to_string(), 100_i32);
+    println!("{:?}", table_value);
 
     //.ENV settings:
     dotenvy::dotenv().ok();
     let feature = env::var("FEATURES").expect("No loaded line");
     let type_path_file = env::var("TYPES_PATH").expect("translation-types.json");
     let query_path_file = env::var("QUERY_PATH").expect("queries-config.json");
+    let collations_path_file = env::var("COLLATION_PATH").expect("collation-translation.json");
     println!(
-        "line loaded : {:?} , {:?}, {:?}",
-        feature, type_path_file, query_path_file
+        "line loaded : {:?} , {:?}, {:?}, {:?}",
+        feature, type_path_file, query_path_file, collations_path_file
     );
 
     //Read SQL Load Queries
     let json_data: String = std::fs::read_to_string(query_path_file).unwrap_or("".to_string());
     let queries: Vec<Query> = serde_json::from_str(&json_data).unwrap_or(Vec::new());
-    queries.iter().for_each(|data| {
-        println!("Queries : {:?}", data);
-    });
-    //
+
     // Load Conversion Types
     let json_types: String = std::fs::read_to_string(type_path_file).unwrap_or("".to_string());
     let type_usages: Vec<TypeMapper> = serde_json::from_str(&json_types).unwrap_or(Vec::new());
-    type_usages
+
+    // Load Collation Types (only MSSQL to PG use case as current use case)
+    let json_collation_or = std::fs::read_to_string(collations_path_file); //.unwrap_or("".to_string());
+    let string_cont = match json_collation_or {
+        Ok(value) => {
+            println!("String from file! {:?}", value);
+            value
+        }
+        Err(err) => {
+            println!("Error at gathering Collations as : {:?} ", err);
+            String::new()
+        }
+    };
+
+    let collation_dec = serde_json::from_str(&string_cont);
+    let collations: Vec<Collations> = match collation_dec {
+        Ok(value) => value,
+        Err(err) => {
+            println!("Error in gathering Vector from JSON : {:?} ", err);
+            Vec::new()
+        }
+    };
+    if collations.is_empty() {
+        println!("Error at gathering collations!")
+    }
+    collations
         .iter()
-        .for_each(|data| println!("Types: {:?}", data));
+        .for_each(|data| println!("Collations: {:?}", data));
 
     //Non Elemental Access; Test actions
     //PostgreSQL Tester
@@ -127,14 +151,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // issue ddl
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
-            VendorOptions::MSSQL => true,
-            _=> false
-        }  &&
-        match  pred.get_destiny_engine() {
-            VendorOptions::POSTGRES => true,
-            _=> false,
-        }
-        ).collect::<Vec<&TypeMapper>>();
+                VendorOptions::MSSQL => true,
+                _=> false
+            }  &&
+            match  pred.get_destiny_engine() {
+                VendorOptions::POSTGRES => true,
+                _=> false,
+            }
+            ).collect::<Vec<&TypeMapper>>();
     let ddl_for_pg = match sql_server_to_pg::translate_ddl(&mut canonnical_model, type_conversion) {
         Ok(value) => {
             value.iter().for_each(|data| println!("{:?} \n", data));
@@ -146,6 +170,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+    // create tables, fk's and pk's
+    // create indexes (alter table)
+    // create default values
+    // get bulks (query in chunks all the db data)
+    // insert bulks (batch insert it!)
+    // create check values
+    // finish trekk
     // mock save the results of the DDL reconstruction
     let write = ddl_for_pg.join(" \n");
     let file_exists =
@@ -177,17 +208,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Error Writting file log DDL : {:?}", err)
         }
     }
-
-    // create tables, fk's and pk's
-
-    // create indexes (alter table)
-    // create default values
-    // get bulks
-    // insert bulks
-    // create check values
-    // finish trekk
-
-    // test for actions
 
     Ok(())
 }

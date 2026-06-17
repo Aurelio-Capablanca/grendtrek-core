@@ -65,7 +65,7 @@ fn build_pks(
     pk_col: &IdentitySpecification,
     mapper_type: &Vec<&TypeMapper>,
 ) -> String {
-    let mut pk_ddl = String::new();
+    let mut pk_ddl = String::new();    
     pk_ddl.push_str("\"");
     pk_ddl.push_str(pk_col.get_col_name_as_ref());
     pk_ddl.push_str("\"");
@@ -101,7 +101,9 @@ fn build_pks(
             pk_ddl.push_str(&col_def.get_numeric_scale().to_string());
             pk_ddl.push_str(")");
         }
-        pk_ddl.push_str("PRIMARY KEY");
+        pk_ddl.push_str("CONSTRAINT ");
+        pk_ddl.push_str(pk_col.get_pk_name_as_ref());
+        pk_ddl.push_str(" PRIMARY KEY");
     }
     pk_ddl
 }
