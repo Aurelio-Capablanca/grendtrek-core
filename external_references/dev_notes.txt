@@ -47,3 +47,12 @@ FK
 -----
 CONSTRAINT FK_Person_BusinessEntity_BusinessEntityID FOREIGN KEY (BusinessEntityID) REFERENCES AdventureWorks2022.Person.BusinessEntity(BusinessEntityID)
 
+---------
+Collations 
+
+
+CREATE COLLATION "SQL_Latin1_General_CP1_CI_AS" (
+    PROVIDER = 'icu',
+    LOCALE = 'en-u-ks-level2',
+    DETERMINISTIC = false
+);

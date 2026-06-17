@@ -1,17 +1,21 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 use crate::internals::data_structures::{
+    database_connector_spec::VendorOptions,
     database_metadata::{
         constraint_metadata::{IdentitySpecification, SQLConstraints},
         db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
     },
-    database_types::{collation::Collations, types::TypeMapper},
+    database_types::{
+        collation::{
+            Collations,
+            DBCollation::{self, POSTGRES},
+        },
+        types::TypeMapper,
+    },
 };
 
-fn build_columns(
-    column: &ColumnMembers,
-    types_conversion: &Vec<&TypeMapper>
-) -> Option<String> {
+fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
     let mut column_ddl = String::new();
     column_ddl.push_str("\"");
     column_ddl.push_str(column.get_column_name());
@@ -44,7 +48,7 @@ fn build_columns(
     column_ddl.push_str(" ");
     if !column.get_collation().is_empty() {
         column_ddl.push_str("COLLATE \"");
-        column_ddl.push_str(column.get_collation()); 
+        column_ddl.push_str(column.get_collation());
         column_ddl.push_str("\"  ");
     }
     if *column.get_is_nullable() {
@@ -55,8 +59,32 @@ fn build_columns(
     Some(column_ddl)
 }
 
-fn build_collation_mod() -> Option<String> {
-    Some(String::new())
+pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<String>> {
+    let mut collations_ddl: Vec<String> = Vec::new();
+    for collation in collations_coll {
+        match collation.get_destiny_engine_ref() {
+            VendorOptions::POSTGRES => {
+                let mut collation_ddl = String::new();
+                collation_ddl.push_str("CREATE COLLATION \"");
+                match collation.get_collation_destiny_ref() {
+                    DBCollation::POSTGRES(collations) => {
+                        collation_ddl.push_str("PROVIDER = '");
+                        collation_ddl.push_str(collations.get_provider_as_ref());
+                        collation_ddl.push_str("',");
+                        collation_ddl.push_str("LOCALE = '");
+                        collation_ddl.push_str(collations.get_locale_as_ref());
+                        collation_ddl.push_str("',");
+                        collation_ddl.push_str("DETERMINISTIC = ");
+                        collation_ddl.push_str(&collations.get_deterministic_as_ref().to_string());                        
+                    }
+                    _ => {}
+                }
+                collations_ddl.push(collation_ddl);
+            }
+            _ => {}
+        }
+    }
+    Some(collations_ddl)
 }
 
 fn build_constraints() {}
@@ -111,7 +139,7 @@ fn build_pks(
 
 pub fn translate_ddl(
     structs_table: &HashMap<(String, String), TableMetadata>,
-    types_conversion: Vec<&TypeMapper>
+    types_conversion: Vec<&TypeMapper>,
 ) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let mut ddl_content: Vec<String> = Vec::new();
     structs_table.iter().for_each(|struct_table| {

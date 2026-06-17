@@ -149,8 +149,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Error at creating schemas : {:?}", err)
         }
     }
-    // issue new collations 
-    // -- use here collations vec made up! 
+    // issue new collations
+    let translate_collations: Vec<String> =
+        sql_server_to_pg::build_collation_mod(&collations).unwrap_or(Vec::new());
+    let pg_pool = match destiny {
+        DatabaseHandlers::PostgresPool(pg) => pg,
+        _ => {
+            panic!("No pool found!")
+        }
+    };
+    pg_actions::create_new_collations(translate_collations, pg_pool)
+        .await
+        .unwrap();
     // issue ddl pk with tables
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                 VendorOptions::MSSQL => true,
