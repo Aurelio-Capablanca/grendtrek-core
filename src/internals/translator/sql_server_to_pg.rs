@@ -66,22 +66,29 @@ pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<Stri
             VendorOptions::POSTGRES => {
                 let mut collation_ddl = String::new();
                 collation_ddl.push_str("CREATE COLLATION \"");
+                let original_collation = match collation.get_collation_origin_ref() {
+                    DBCollation::MSSQL(collation) => {collation.as_str()}
+                    _=> {""}
+                };
+                collation_ddl.push_str(original_collation);
+                collation_ddl.push_str("\" (");
                 match collation.get_collation_destiny_ref() {
                     DBCollation::POSTGRES(collations) => {
                         collation_ddl.push_str("PROVIDER = '");
                         collation_ddl.push_str(collations.get_provider_as_ref());
                         collation_ddl.push_str("',");
-                        collation_ddl.push_str("LOCALE = '");
+                        collation_ddl.push_str(" LOCALE = '");
                         collation_ddl.push_str(collations.get_locale_as_ref());
                         collation_ddl.push_str("',");
-                        collation_ddl.push_str("DETERMINISTIC = ");
-                        collation_ddl.push_str(&collations.get_deterministic_as_ref().to_string());                        
+                        collation_ddl.push_str(" DETERMINISTIC = ");
+                        collation_ddl.push_str(&collations.get_deterministic_as_ref().to_string());
+                        collation_ddl.push_str(");")
                     }
                     _ => {}
                 }
                 collations_ddl.push(collation_ddl);
             }
-            _ => {}
+            _ => {} // other cases doesn't apply since here's just for MSSQL to PG
         }
     }
     Some(collations_ddl)

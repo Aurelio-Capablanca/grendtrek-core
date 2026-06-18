@@ -152,6 +152,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // issue new collations
     let translate_collations: Vec<String> =
         sql_server_to_pg::build_collation_mod(&collations).unwrap_or(Vec::new());
+    translate_collations.iter().for_each(|data| println!("{:?}",data));    
+    /*
     let pg_pool = match destiny {
         DatabaseHandlers::PostgresPool(pg) => pg,
         _ => {
@@ -220,6 +222,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Error Writting file log DDL : {:?}", err)
         }
     }
-
+*/
     Ok(())
 }
