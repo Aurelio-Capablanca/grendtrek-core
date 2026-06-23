@@ -133,12 +133,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .iter()
         .map(|data| {
             let schema = data.0;
-            schema.1.clone()
+            format!("CREATE SCHEMA {:?}",schema.1.to_owned())
         })
         .collect::<HashSet<_>>();
-    schemas_cannonical
-        .iter()
-        .for_each(|data| println!("{:?}", data));
     // 1.1 send to postgres
     let action = pg_actions::create_schemas(destiny, &schemas_cannonical).await;
     match action {
@@ -152,8 +149,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // issue new collations
     let translate_collations: Vec<String> =
         sql_server_to_pg::build_collation_mod(&collations).unwrap_or(Vec::new());
-    translate_collations.iter().for_each(|data| println!("{:?}",data));    
-    /*
     let pg_pool = match destiny {
         DatabaseHandlers::PostgresPool(pg) => pg,
         _ => {
@@ -165,14 +160,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
     // issue ddl pk with tables
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
-                VendorOptions::MSSQL => true,
-                _=> false
-            }  &&
-            match  pred.get_destiny_engine() {
-                VendorOptions::POSTGRES => true,
-                _=> false,
-            }
-            ).collect::<Vec<&TypeMapper>>();
+                    VendorOptions::MSSQL => true,
+                    _=> false
+                }  &&
+                match  pred.get_destiny_engine() {
+                    VendorOptions::POSTGRES => true,
+                    _=> false,
+                }
+                ).collect::<Vec<&TypeMapper>>();
     let ddl_for_pg = match sql_server_to_pg::translate_ddl(&mut canonnical_model, type_conversion) {
         Ok(value) => {
             value.iter().for_each(|data| println!("{:?} \n", data));
@@ -183,7 +178,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Vec::new()
         }
     };
-
     // fk ddl
     // create indexes (alter table) ddl
     // create default values ddl
@@ -222,6 +216,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Error Writting file log DDL : {:?}", err)
         }
     }
-*/
     Ok(())
 }

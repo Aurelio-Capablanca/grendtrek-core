@@ -10,12 +10,11 @@ pub async fn create_schemas(
         DatabaseHandlers::PostgresPool(client) => {
             let pg_client = &mut client.pg_pool.get().await.unwrap();
             let tx = pg_client.transaction().await.unwrap();
-            for schema_name in schema_names {
-                let raw = format!("CREATE SCHEMA {}", schema_name);
-                let query = tx.execute(&raw, &[]).await;
+            for schema in schema_names {
+                let query = tx.execute(schema, &[]).await;
                 match query {
                     Ok(_) => {
-                        println!("Schema created ! {:?}", schema_name)
+                        println!("Schema created ! {:?}", schema)
                     }
                     Err(err) => {
                         tx.rollback().await?;
@@ -40,13 +39,13 @@ pub async fn create_new_collations(
         let collation_query = tx.execute(&colls, &[]).await;
         match collation_query {
             Ok(_) => {
-                println!("Collation Created !")
+                println!("Collation Created ! {:?}", colls)
             }
-            Err(err) => {                
+            Err(err) => {
                 tx.rollback().await?;
-                return  Err(Box::new(err));
+                return Err(Box::new(err));
             }
-        }        
+        }
     }
     tx.commit().await.unwrap();
     Ok(true)

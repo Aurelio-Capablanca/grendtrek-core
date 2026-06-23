@@ -9,7 +9,7 @@ use crate::internals::data_structures::{
     database_types::{
         collation::{
             Collations,
-            DBCollation::{self, POSTGRES},
+            DBCollation::{self},
         },
         types::TypeMapper,
     },

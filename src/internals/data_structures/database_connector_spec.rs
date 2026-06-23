@@ -33,10 +33,8 @@ pub struct MSSQLPoolHandler{
 } 
 
 //DB enums declaration:
-pub enum DatabaseHandlers{
-   // Postgres(PgHandler),
-    PostgresPool(PgPoolHandler),
-    //SqlServer(MSSQLHandler),
+pub enum DatabaseHandlers{   
+    PostgresPool(PgPoolHandler),    
     SqlServerPool(MSSQLPoolHandler),
     //_MySql(),
     None
