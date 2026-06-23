@@ -54,7 +54,7 @@ impl IdentitySpecification {
             pk_name: "n".to_string(),
             column_name: "c".to_string(),
             table_name: "t".to_string(),
-            data_type: "none".to_string(),
+            data_type: "n".to_string(),
             key_ordinal: 0,
             last_value: Some(0),
             increment_by: Some(0),

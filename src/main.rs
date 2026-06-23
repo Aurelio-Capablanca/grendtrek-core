@@ -12,14 +12,14 @@ use crate::{
         data_structures::{
             database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
             database_metadata::{
-                db_metadata::cannonical_tables::TableMetadata, table_data::TableData,
+                db_metadata::cannonical_tables::TableMetadata, table_data::CanonnicalColumns,
             },
             database_types::{collation::Collations, query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
         },
         translator::sql_server_to_pg,
     },
-    outer::databases::db_actions::pg_actions,
+    outer::databases::db_actions::{pg_actions, sql_server_databuffer},
 };
 
 use crate::outer::databases::{
@@ -28,10 +28,6 @@ use crate::outer::databases::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let table_value: TableData<i32> =
-        TableData::new("a_table".to_string(), "a_value".to_string(), 100_i32);
-    println!("{:?}", table_value);
-
     //.ENV settings:
     dotenvy::dotenv().ok();
     let feature = env::var("FEATURES").expect("No loaded line");
@@ -112,6 +108,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let origin = &mut entry_registries.origin;
     let destiny = &mut entry_registries.destiny;
 
+
     let sqlserver_cannon: Vec<&Query> = queries
         .iter()
         .filter(|pred| match pred.engine_out() {
@@ -137,6 +134,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect::<HashSet<_>>();
     // 1.1 send to postgres
+    /*
     let action = pg_actions::create_schemas(destiny, &schemas_cannonical).await;
     match action {
         Ok(_) => {
@@ -145,7 +143,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(err) => {
             println!("Error at creating schemas : {:?}", err)
         }
-    }
+    }*/
     // issue new collations
     let translate_collations: Vec<String> =
         sql_server_to_pg::build_collation_mod(&collations).unwrap_or(Vec::new());
@@ -155,9 +153,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             panic!("No pool found!")
         }
     };
-    pg_actions::create_new_collations(translate_collations, pg_pool)
+    /*pg_actions::create_new_collations(translate_collations, pg_pool)
         .await
-        .unwrap();
+        .unwrap();*/        
     // issue ddl pk with tables
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                     VendorOptions::MSSQL => true,
@@ -177,7 +175,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{:?}", err);
             Vec::new()
         }
+    };    
+    //test type detection 
+    let mut connection = match origin {
+        DatabaseHandlers::SqlServerPool(conn) => {
+            conn.mssql_pool.get().await.unwrap()
+        },
+        _=> {
+            panic!("No connection ?")
+        }
     };
+    let result_types = sql_server_databuffer::get_rows_from_tables(&canonnical_model, &mut connection).await?;
+    
     // fk ddl
     // create indexes (alter table) ddl
     // create default values ddl

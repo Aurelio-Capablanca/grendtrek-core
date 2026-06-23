@@ -165,7 +165,7 @@ async fn build_canonnical_fk(
         .into_first_result()
         .await
         .unwrap();
-    for fk in fks {
+    for fk in fks {        
         let schema_name: String = fk
             .get("schema_name")
             .map(str::to_owned)
@@ -326,7 +326,7 @@ async fn build_canonnical_indexes (
         .into_first_result()
         .await
         .unwrap();
-    for index in indexes {
+    for index in indexes {        
         let table_name = index
             .get("table_name")
             .map(str::to_owned)
