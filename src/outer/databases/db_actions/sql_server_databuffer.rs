@@ -29,13 +29,11 @@ fn query_builder(columns: &Vec<ColumnMembers>) -> String {
     columns
         .iter()
         .map(|col| {
-            let col_name = col.get_column_name();
-            println!("Current Column: {:?}", col_name);
+            let col_name = col.get_column_name();            
             if col.get_data_type().eq_ignore_ascii_case("hierarchyid") {
                 format!("CAST([{}] as VARCHAR) as [{}]", col_name, col_name)
             } else if col.get_data_type().eq_ignore_ascii_case("xml")
-                || col.get_data_type().eq_ignore_ascii_case("geography")
-                || col.get_column_name().eq_ignore_ascii_case("other")
+                || col.get_data_type().eq_ignore_ascii_case("geography")                
             {
                 format!("CAST([{}] as NVARCHAR(max)) as [{}]", col_name, col_name)
             } else {
