@@ -4,16 +4,44 @@ use bb8_tiberius::ConnectionManager;
 use tiberius::Row;
 
 use crate::internals::data_structures::database_metadata::{
-    constraint_metadata::{IdentitySpecification, SQLConstraints::{self, PRIMARYKEY}}, db_metadata::cannonical_tables::TableMetadata, table_data::CanonnicalColumns,
+    constraint_metadata::{
+        IdentitySpecification,
+        SQLConstraints::{self, PRIMARYKEY},
+    },
+    db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
+    table_data::CanonnicalColumns,
 };
 
 fn rows_to_canonnical(row: &Row) -> Result<Vec<CanonnicalColumns>, Box<dyn std::error::Error>> {
     let data_columns: Vec<CanonnicalColumns> = Vec::new();
     for (i, column) in row.columns().iter().enumerate() {
         let col_name = column.name();
-        println!("Column Name : {:?} | Column Type : {:?}", col_name, column.column_type());        
+        println!(
+            "Column Name : {:?} | Column Type : {:?}",
+            col_name,
+            column.column_type()
+        );
     }
     Ok(Vec::new())
+}
+
+fn query_builder(columns: &Vec<ColumnMembers>) -> String {    
+    columns.iter().map(|col| {        
+        let mut terms_query = String::new();        
+        if col.get_data_type().eq_ignore_ascii_case("hierarchyid") &&
+           col.get_data_type().eq_ignore_ascii_case("xml") {
+            terms_query.push_str(
+                &format!(
+                    "{:?}.toString() as {:?}",
+                    col.get_column_name(),
+                    col.get_column_name()
+                )
+                .to_string(),
+            );
+        }
+        terms_query
+    }).collect::<Vec<String>>()
+    .join(",")    
 }
 
 pub async fn get_rows_from_tables(
@@ -30,10 +58,18 @@ pub async fn get_rows_from_tables(
             .find(|pred| match pred {
                 SQLConstraints::PRIMARYKEY(_) => true,
                 _ => false,
-            }).unwrap_or(empty_otherwise);
+            })
+            .unwrap_or(empty_otherwise);
+        let columns_query = query_builder(table_metadata.get_cols_as_ref());
         let query_build = format!(
-            "SELECT * FROM {:?}.{:?} ORDER BY {:?}  OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;",
-            table_key.1, table_key.0, pk_identifier.get_pk_ref_opt().unwrap().get_col_name_as_ref()
+            "SELECT {:?} FROM {:?}.{:?} ORDER BY {:?}  OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;",
+            columns_query,
+            table_key.1,
+            table_key.0,
+            pk_identifier
+                .get_pk_ref_opt()
+                .unwrap()
+                .get_col_name_as_ref()
         );
         println!("{:?}", query_build);
         let rows_tables = connection

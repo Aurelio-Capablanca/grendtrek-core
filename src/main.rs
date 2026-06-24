@@ -108,7 +108,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let origin = &mut entry_registries.origin;
     let destiny = &mut entry_registries.destiny;
 
-
     let sqlserver_cannon: Vec<&Query> = queries
         .iter()
         .filter(|pred| match pred.engine_out() {
@@ -130,7 +129,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .iter()
         .map(|data| {
             let schema = data.0;
-            format!("CREATE SCHEMA {:?}",schema.1.to_owned())
+            format!("CREATE SCHEMA {:?}", schema.1.to_owned())
         })
         .collect::<HashSet<_>>();
     // 1.1 send to postgres
@@ -154,8 +153,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     /*pg_actions::create_new_collations(translate_collations, pg_pool)
-        .await
-        .unwrap();*/        
+    .await
+    .unwrap();*/
     // issue ddl pk with tables
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                     VendorOptions::MSSQL => true,
@@ -175,18 +174,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("{:?}", err);
             Vec::new()
         }
-    };    
-    //test type detection 
+    };
+    //test type detection
     let mut connection = match origin {
-        DatabaseHandlers::SqlServerPool(conn) => {
-            conn.mssql_pool.get().await.unwrap()
-        },
-        _=> {
+        DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
+        _ => {
             panic!("No connection ?")
         }
     };
-    let result_types = sql_server_databuffer::get_rows_from_tables(&canonnical_model, &mut connection).await?;
-    
+    let result_types =
+        sql_server_databuffer::get_rows_from_tables(&canonnical_model, &mut connection).await?;
+
     // fk ddl
     // create indexes (alter table) ddl
     // create default values ddl
