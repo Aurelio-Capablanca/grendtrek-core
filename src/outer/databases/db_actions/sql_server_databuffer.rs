@@ -29,11 +29,11 @@ fn query_builder(columns: &Vec<ColumnMembers>) -> String {
     columns
         .iter()
         .map(|col| {
-            let col_name = col.get_column_name();            
+            let col_name = col.get_column_name();
             if col.get_data_type().eq_ignore_ascii_case("hierarchyid") {
                 format!("CAST([{}] as VARCHAR) as [{}]", col_name, col_name)
             } else if col.get_data_type().eq_ignore_ascii_case("xml")
-                || col.get_data_type().eq_ignore_ascii_case("geography")                
+                || col.get_data_type().eq_ignore_ascii_case("geography")
             {
                 format!("CAST([{}] as NVARCHAR(max)) as [{}]", col_name, col_name)
             } else {
@@ -57,11 +57,12 @@ pub async fn get_rows_from_tables(
             .get_constrs_as_ref()
             .iter()
             .find(|pred| match pred {
-                SQLConstraints::PRIMARYKEY(_) => true,
+                PRIMARYKEY(_) => true,
                 _ => false,
             })
             .unwrap_or(empty_otherwise);
         let columns_query = query_builder(table_metadata.get_cols_as_ref());
+        // implement cicles for limits
         let query_build = format!(
             "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;",
             columns_query,

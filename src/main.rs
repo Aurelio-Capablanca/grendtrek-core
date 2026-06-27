@@ -132,8 +132,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             format!("CREATE SCHEMA {:?}", schema.1.to_owned())
         })
         .collect::<HashSet<_>>();
-    // 1.1 send to postgres
-    /*
+    // 1.1 send to postgres    
     let action = pg_actions::create_schemas(destiny, &schemas_cannonical).await;
     match action {
         Ok(_) => {
@@ -142,7 +141,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Err(err) => {
             println!("Error at creating schemas : {:?}", err)
         }
-    }*/
+    }
     // issue new collations
     let translate_collations: Vec<String> =
         sql_server_to_pg::build_collation_mod(&collations).unwrap_or(Vec::new());
@@ -152,10 +151,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             panic!("No pool found!")
         }
     };
-    /*pg_actions::create_new_collations(translate_collations, pg_pool)
+    // 1.2 create collations
+    pg_actions::create_new_collations(translate_collations, pg_pool)
     .await
-    .unwrap();*/
-    // issue ddl pk with tables
+    .unwrap();
+    // 2.0  issue ddl pk with tables
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                     VendorOptions::MSSQL => true,
                     _=> false

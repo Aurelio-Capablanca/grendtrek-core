@@ -12,6 +12,7 @@ pub mod cannonical_tables {
         columns: Vec<ColumnMembers>,
         constraints: Vec<SQLConstraints>,
         indexes: Vec<TableIndex>,
+        total_rows: i32,
     }
 
     impl TableMetadata {
@@ -28,6 +29,7 @@ pub mod cannonical_tables {
                 columns: columns,
                 constraints: constraints,
                 indexes: indexes,
+                total_rows : 0
             }
         }
 
@@ -38,6 +40,7 @@ pub mod cannonical_tables {
                 columns: Vec::new(),
                 constraints: Vec::new(),
                 indexes: Vec::new(),
+                total_rows : 0
             }
         }
 
@@ -48,6 +51,7 @@ pub mod cannonical_tables {
                 columns: Vec::new(),
                 constraints: Vec::new(),
                 indexes: Vec::new(),
+                total_rows : 0
             }
         }
 
