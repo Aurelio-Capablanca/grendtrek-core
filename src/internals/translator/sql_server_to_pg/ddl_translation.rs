@@ -1,4 +1,4 @@
-use std::{collections::HashMap, vec};
+use std::{collections::HashMap};
 
 use crate::internals::data_structures::{
     database_connector_spec::VendorOptions,

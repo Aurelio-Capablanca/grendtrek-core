@@ -11,15 +11,13 @@ use crate::{
     internals::{
         data_structures::{
             database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-            database_metadata::{
-                db_metadata::cannonical_tables::TableMetadata, table_data::CanonnicalColumns,
-            },
+            database_metadata::db_metadata::cannonical_tables::TableMetadata,
             database_types::{collation::Collations, query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
         },
-        translator::sql_server_to_pg,
+        translator::sql_server_to_pg::{ddl_translation, query_builder},
     },
-    outer::databases::db_actions::{pg_actions, sql_server_databuffer},
+    outer::databases::db_actions::pg_actions,
 };
 
 use crate::outer::databases::{
@@ -132,7 +130,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             format!("CREATE SCHEMA {:?}", schema.1.to_owned())
         })
         .collect::<HashSet<_>>();
-    // 1.1 send to postgres    
+    // 1.1 send to postgres
     let action = pg_actions::create_schemas(destiny, &schemas_cannonical).await;
     match action {
         Ok(_) => {
@@ -144,7 +142,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     // issue new collations
     let translate_collations: Vec<String> =
-        sql_server_to_pg::build_collation_mod(&collations).unwrap_or(Vec::new());
+        ddl_translation::build_collation_mod(&collations).unwrap_or(Vec::new());
     let pg_pool = match destiny {
         DatabaseHandlers::PostgresPool(pg) => pg,
         _ => {
@@ -153,9 +151,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     // 1.2 create collations
     pg_actions::create_new_collations(translate_collations, pg_pool)
-    .await
-    .unwrap();
+        .await
+        .unwrap();
     // 2.0  issue ddl pk with tables
+    //  --- type translation
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                     VendorOptions::MSSQL => true,
                     _=> false
@@ -165,7 +164,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     _=> false,
                 }
                 ).collect::<Vec<&TypeMapper>>();
-    let ddl_for_pg = match sql_server_to_pg::translate_ddl(&mut canonnical_model, type_conversion) {
+    // --- DDL generation
+    let ddl_for_pg = match ddl_translation::translate_ddl(&mut canonnical_model, type_conversion) {
         Ok(value) => {
             value.iter().for_each(|data| println!("{:?} \n", data));
             value
@@ -183,8 +183,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     let result_types =
-        sql_server_databuffer::get_rows_from_tables(&canonnical_model, &mut connection).await?;
-
+        query_builder::get_rows_from_tables(&canonnical_model, &mut connection).await?;
     // fk ddl
     // create indexes (alter table) ddl
     // create default values ddl
@@ -196,7 +195,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let write = ddl_for_pg.join(" \n");
     let file_exists =
         std::fs::metadata("/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql");
-
     let file_ddl = match file_exists {
         Ok(metadata) => {
             println!("{:?}", metadata);
@@ -209,7 +207,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             )
         }
     };
-
     match file_ddl {
         Ok(mut file) => match file.write_all(write.as_bytes()) {
             Ok(_) => {
@@ -223,5 +220,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Error Writting file log DDL : {:?}", err)
         }
     }
+    // file writting for OS
     Ok(())
 }
