@@ -93,6 +93,7 @@ async fn build_cannonical_columns(
                     vec![column_memb.to_owned()],
                     computed_expression,
                     Vec::new(),
+                    0
                 )
             });
     }

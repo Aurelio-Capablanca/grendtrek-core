@@ -1,7 +1,7 @@
 pub mod cannonical_tables {
 
     use crate::internals::data_structures::database_metadata::constraint_metadata::{
-        ForeignKeys, IdentitySpecification, SQLConstraints, TableIndex
+        ForeignKeys, IdentitySpecification, SQLConstraints, TableIndex,
     };
     use crate::internals::data_structures::database_metadata::db_metadata::cannonical_columns::ColumnMembers;
 
@@ -22,6 +22,7 @@ pub mod cannonical_tables {
             columns: Vec<ColumnMembers>,
             constraints: Vec<SQLConstraints>,
             indexes: Vec<TableIndex>,
+            total_rows: i32,
         ) -> Self {
             Self {
                 table_name: table_name,
@@ -29,7 +30,7 @@ pub mod cannonical_tables {
                 columns: columns,
                 constraints: constraints,
                 indexes: indexes,
-                total_rows : 0
+                total_rows: total_rows,
             }
         }
 
@@ -40,7 +41,7 @@ pub mod cannonical_tables {
                 columns: Vec::new(),
                 constraints: Vec::new(),
                 indexes: Vec::new(),
-                total_rows : 0
+                total_rows: 0,
             }
         }
 
@@ -51,33 +52,32 @@ pub mod cannonical_tables {
                 columns: Vec::new(),
                 constraints: Vec::new(),
                 indexes: Vec::new(),
-                total_rows : 0
+                total_rows: 0,
             }
         }
 
-        pub fn get_indexes(&self) -> &Vec<TableIndex> {
-            &self.indexes
+        pub fn get_indexes(self) -> Vec<TableIndex> {
+            self.indexes
         }
 
         pub fn get_constrs_as_ref(&self) -> &Vec<SQLConstraints> {
             &self.constraints
         }
-        
+
         pub fn get_constrs_as_ref_mut(&mut self) -> &mut Vec<SQLConstraints> {
-            &mut self.constraints            
+            &mut self.constraints
         }
 
-        
         pub fn get_cols_as_ref_sort(&mut self) -> &Vec<ColumnMembers> {
             let cols = &mut self.columns;
             cols.sort_by(|a, b| a.get_ordering_ref().cmp(b.get_ordering_ref()));
             cols
         }
-        
+
         pub fn get_cols_as_ref(&self) -> &Vec<ColumnMembers> {
             &self.columns
         }
-        
+
         pub fn get_cols_as_owned(self) -> Vec<ColumnMembers> {
             self.columns
         }
@@ -85,23 +85,23 @@ pub mod cannonical_tables {
         pub fn add_columns(&mut self, col: ColumnMembers) {
             self.columns.push(col);
         }
-        
+
         pub fn add_fks(&mut self, fk: ForeignKeys) {
             self.constraints.push(SQLConstraints::FOREIGNKEY(fk));
         }
-        
-        pub fn add_computed_res(&mut self, comp: SQLConstraints){
+
+        pub fn add_computed_res(&mut self, comp: SQLConstraints) {
             self.constraints.push(comp);
         }
 
-        pub fn add_indexes (&mut self, index: TableIndex){
+        pub fn add_indexes(&mut self, index: TableIndex) {
             self.indexes.push(index);
         }
-        
-        pub fn add_pk(&mut self, pk: IdentitySpecification) {            
+
+        pub fn add_pk(&mut self, pk: IdentitySpecification) {
             self.constraints.push(SQLConstraints::PRIMARYKEY(pk));
         }
-        
+
         pub fn get_table_name(&self) -> &str {
             &self.table_name.as_ref()
         }
@@ -154,7 +154,7 @@ pub mod cannonical_columns {
                 is_identity: is_identity,
                 is_gen_always: is_gen_always,
                 gen_always_text: gen_always_text,
-                ordering: ordering
+                ordering: ordering,
             }
         }
 
@@ -194,7 +194,7 @@ pub mod cannonical_columns {
         pub fn get_ordering_ref(&self) -> &i32 {
             &self.ordering
         }
-        
+
         pub fn get_gen_alw_txt(&self) -> &str {
             self.gen_always_text.as_deref().unwrap_or("")
         }
