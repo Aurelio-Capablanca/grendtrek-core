@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 
-use tiberius::time::chrono::{self, DateTime};
+use tiberius::time::chrono::{self, DateTime, NaiveDateTime};
+
+
 
 #[derive(Debug)]
 pub enum GenericData {
@@ -12,7 +14,8 @@ pub enum GenericData {
     BigFloat(Option<f64>),
     Bool(Option<bool>),
     Bit(Option<u8>),
-    DateTime(Option<DateTime<chrono::Utc>>)
+    DateTimeLocal(Option<NaiveDateTime>),
+    DateTimeOffset(Option<DateTime<chrono::Utc>>)    
 }
 
 #[derive(Debug)]

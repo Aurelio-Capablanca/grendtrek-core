@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bb8_tiberius::ConnectionManager;
-use tiberius::{ColumnType, Row};
+use tiberius::{ColumnType, Row, time::{DateTime, chrono::{NaiveDateTime, Utc}}};
 
 use crate::internals::data_structures::database_metadata::{
     constraint_metadata::{
@@ -20,9 +20,14 @@ fn rows_to_canonnical(row: &Row) -> Result<Vec<CanonnicalColumns>, Box<dyn std::
         let col_type = column.column_type();
         let value = match col_type {
             ColumnType::Int4 => GenericData::Int(row.get(i)),
-            ColumnType::NVarchar => {
+            ColumnType::NVarchar | ColumnType::NChar => {
                 GenericData::Text(row.get::<&str, _>(i).map(|data| data.to_string()))
             }
+            ColumnType::Datetime => {                
+                let val: Option<NaiveDateTime> = row.get(i);
+                GenericData::DateTimeLocal(val)
+            },            
+            ColumnType::Bit => GenericData::Bit(row.get::<u8, _>(i).map(|data| data.to_be())),
             _ => GenericData::Text(Some("nd".to_string())),
         };
         println!(
