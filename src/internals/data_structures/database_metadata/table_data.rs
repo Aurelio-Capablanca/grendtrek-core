@@ -5,7 +5,7 @@ use tiberius::time::chrono::{self, DateTime, NaiveDateTime};
 #[derive(Debug)]
 pub enum GenericData {
     Text(Option<String>),
-    SmallInt(Option<i8>),
+    SmallInt(Option<i16>),
     Int(Option<i32>),
     Float(Option<f64>),
     Bool(Option<bool>),
