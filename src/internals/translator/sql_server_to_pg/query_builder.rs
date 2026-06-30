@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bb8_tiberius::ConnectionManager;
-use tiberius::Row;
+use tiberius::{Row, error::Error};
 
 use crate::internals::data_structures::database_metadata::{
     constraint_metadata::{
@@ -12,17 +12,37 @@ use crate::internals::data_structures::database_metadata::{
     table_data::CanonnicalColumns,
 };
 
-fn rows_to_canonnical(row: &Row) -> Result<Vec<CanonnicalColumns>, Box<dyn std::error::Error>> {
+fn rows_to_canonnical(
+    row: &Row,
+    index: usize,
+) -> Result<Vec<CanonnicalColumns>, Box<dyn std::error::Error>> {
     let data_columns: Vec<CanonnicalColumns> = Vec::new();
-    for (i, column) in row.columns().iter().enumerate() {
-        let col_name = column.name();
-        /*println!(
-            "Column Name : {:?} | Column Type : {:?}",
-            col_name,
-            column.column_type()
-        );*/
-    }
-    Ok(Vec::new())
+  
+    let col_name: String = match row.columns().get(index).ok_or(Error::Io { kind: std::io::ErrorKind::NotFound, message: "No Column!".to_string() }) {
+        Ok(value) => value.name().to_string(),
+        Err(err) => {
+            eprintln!("Error for Column Name detection {}",err);
+            "".to_string()
+        }
+    };
+
+    let column_type = match row.columns().get(index).ok_or(Error::Io { kind: std::io::ErrorKind::NotFound, message: "".to_string() }) {
+        Ok(value) => {
+            value.column_type()
+        }
+        Err(err) => {
+            eprintln!("Error for Type Scan : {}",err);
+            tiberius::ColumnType::Null
+        }
+    };
+    // for (i, column) in row.columns().iter().enumerate() {
+    //     let col_name = column.name();
+    println!(
+        "Column Name : {:?} | Column Type : {:?}",
+        col_name, column_type
+    );
+    // }
+    Ok(data_columns)
 }
 
 fn query_builder(columns: &Vec<ColumnMembers>) -> String {
@@ -66,7 +86,7 @@ pub async fn get_rows_from_tables(
                 _ => false,
             })
             .unwrap_or(empty_otherwise);
-        let columns_query = query_builder(table_metadata.get_cols_as_ref());
+        let columns_query = query_builder(table_metadata.get_cols_as_ref());        
         // implement cicles for limits
         let query_build = format!(
             "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;",
@@ -86,8 +106,9 @@ pub async fn get_rows_from_tables(
             .into_first_result()
             .await
             .unwrap();
-        for row in rows_tables {
-            let canonical_row = rows_to_canonnical(&row);
+        for (index, row) in rows_tables.iter().enumerate() {
+            println!("Index : {}",index);
+            let canonical_row = rows_to_canonnical(&row, index);
         }
     }
     Ok(true)

@@ -18,8 +18,7 @@ async fn count_rows_sqlserver(
     table_name: &str,
     schema_name: &str,
 ) -> Result<i32, Box<dyn std::error::Error>> {
-    let count_query = format!("SELECT count(1) FROM {}.{}", schema_name, table_name);
-    println!("{}", count_query);
+    let count_query = format!("SELECT count(1) FROM {}.{}", schema_name, table_name);    
     let mut count: i32 = 0;
     let execution = client_conn
         .query(count_query, &[])
