@@ -16,11 +16,11 @@ fn rows_to_canonnical(row: &Row) -> Result<Vec<CanonnicalColumns>, Box<dyn std::
     let data_columns: Vec<CanonnicalColumns> = Vec::new();
     for (i, column) in row.columns().iter().enumerate() {
         let col_name = column.name();
-        println!(
+        /*println!(
             "Column Name : {:?} | Column Type : {:?}",
             col_name,
             column.column_type()
-        );
+        );*/
     }
     Ok(Vec::new())
 }
@@ -51,7 +51,12 @@ pub async fn get_rows_from_tables(
     for metadata in tables_metadata {
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
-        println!("Reference columns : {:?}", table_metadata.get_cols_as_ref());
+        //println!("Reference columns : {:?}", table_metadata.get_cols_as_ref());
+        println!(
+            "total Rows in {}  is {}",
+            table_metadata.get_table_name(),
+            table_metadata.get_total_rows_as_ref()
+        );
         let empty_otherwise = &SQLConstraints::PRIMARYKEY(IdentitySpecification::empty_struct());
         let pk_identifier = table_metadata
             .get_constrs_as_ref()

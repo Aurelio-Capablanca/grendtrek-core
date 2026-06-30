@@ -150,9 +150,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     // 1.2 create collations
-    pg_actions::create_new_collations(translate_collations, pg_pool)
-        .await
-        .unwrap();
+    let collation_result =
+        match pg_actions::create_new_collations(translate_collations, pg_pool).await {
+            Ok(res) => res,
+            Err(err) => {
+                eprint!("{}",err);
+                false
+            }
+        };
     // 2.0  issue ddl pk with tables
     //  --- type translation
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
@@ -167,7 +172,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // --- DDL generation
     let ddl_for_pg = match ddl_translation::translate_ddl(&mut canonnical_model, type_conversion) {
         Ok(value) => {
-            value.iter().for_each(|data| println!("{:?} \n", data));
+            //value.iter().for_each(|data| println!("{:?} \n", data));
             value
         }
         Err(err) => {

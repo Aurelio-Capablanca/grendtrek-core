@@ -109,6 +109,10 @@ pub mod cannonical_tables {
         pub fn get_table_schema(&self) -> &str {
             &self.table_schema.as_ref()
         }
+        
+        pub fn get_total_rows_as_ref(&self) -> &i32 {
+            &self.total_rows
+        }
     }
 }
 

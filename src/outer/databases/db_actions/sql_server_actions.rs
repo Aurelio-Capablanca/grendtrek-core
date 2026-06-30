@@ -13,6 +13,27 @@ use crate::internals::data_structures::{
     database_types::query::Query,
 };
 
+async fn count_rows_sqlserver(
+    client_conn: &mut bb8::PooledConnection<'_, ConnectionManager>,
+    table_name: &str,
+    schema_name: &str,
+) -> Result<i32, Box<dyn std::error::Error>> {
+    let count_query = format!("SELECT count(1) FROM {}.{}", schema_name, table_name);
+    println!("{}", count_query);
+    let mut count: i32 = 0;
+    let execution = client_conn
+        .query(count_query, &[])
+        .await
+        .unwrap()
+        .into_first_result()
+        .await
+        .unwrap();
+    for exec in execution {
+        count = exec.get(0).unwrap_or(0);
+    }
+    Ok(count)
+}
+
 async fn build_cannonical_columns(
     client_conn: &mut bb8::PooledConnection<'_, ConnectionManager>,
     cols_query: &&Query,
@@ -27,6 +48,7 @@ async fn build_cannonical_columns(
         .into_first_result()
         .await
         .unwrap();
+    let mut total_rows = 0;
     for col in cols {
         let table_name: String = col
             .get("table_name")
@@ -36,7 +58,14 @@ async fn build_cannonical_columns(
             .get("schema_name")
             .map(str::to_owned)
             .unwrap_or_else(|| "no_schema".to_owned());
-        //--
+        //--        
+        let key_table = (table_name.to_owned(), schema_name.to_owned());        
+        if !tables.contains_key(&key_table) {            
+            total_rows =
+                count_rows_sqlserver(client_conn, table_name.as_str(), schema_name.as_str())
+                    .await
+                    .unwrap();
+        }
         let col_name: Option<&str> = col.get("column_name");
         let data_type: &str = col.get("data_type").unwrap_or_else(|| "");
         let length_field: i32 = col.get("length_field").unwrap_or_else(|| 0i32);
@@ -53,7 +82,7 @@ async fn build_cannonical_columns(
         let text_gen_alw: Option<&str> = col.get("text_generated_always");
         let def_comp_val: Option<&str> = col.get("computed_col_value");
         let ordering: i32 = col.get("ordering").unwrap_or(0);
-        let key_table = (table_name.clone(), schema_name.clone());
+
         let column_memb = ColumnMembers::new(
             Some(col_name.map(str::to_owned).unwrap()),
             Some(data_type.to_string()),
@@ -88,12 +117,12 @@ async fn build_cannonical_columns(
             })
             .or_insert_with_key(|_| {
                 TableMetadata::new(
-                    table_name,
+                    table_name.to_owned(),
                     schema_name,
                     vec![column_memb.to_owned()],
                     computed_expression,
                     Vec::new(),
-                    0
+                    total_rows,
                 )
             });
     }
@@ -166,7 +195,7 @@ async fn build_canonnical_fk(
         .into_first_result()
         .await
         .unwrap();
-    for fk in fks {        
+    for fk in fks {
         let schema_name: String = fk
             .get("schema_name")
             .map(str::to_owned)
@@ -315,7 +344,7 @@ async fn build_canonnical_checks(
     }
 }
 
-async fn build_canonnical_indexes (
+async fn build_canonnical_indexes(
     client_conn: &mut bb8::PooledConnection<'_, ConnectionManager>,
     index_query: &&Query,
     tables: &mut HashMap<(String, String), TableMetadata>,
@@ -327,7 +356,7 @@ async fn build_canonnical_indexes (
         .into_first_result()
         .await
         .unwrap();
-    for index in indexes {        
+    for index in indexes {
         let table_name = index
             .get("table_name")
             .map(str::to_owned)
@@ -345,8 +374,7 @@ async fn build_canonnical_indexes (
             .map(str::to_owned)
             .unwrap_or_else(|| "".to_owned());
         let is_unique: bool = index.get::<bool, _>("is_unique").unwrap_or(false);
-        let is_unique_cons: bool =
-            index.get::<bool, _>("is_unique_constr").unwrap_or(false);
+        let is_unique_cons: bool = index.get::<bool, _>("is_unique_constr").unwrap_or(false);
         let filter_desc: String = index
             .get("filter_desc")
             .map(str::to_owned)
