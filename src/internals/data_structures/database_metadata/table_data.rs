@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use tiberius::time::chrono::{self, DateTime};
+
 #[derive(Debug)]
 pub enum GenericData {
     Text(Option<String>),
@@ -10,12 +12,13 @@ pub enum GenericData {
     BigFloat(Option<f64>),
     Bool(Option<bool>),
     Bit(Option<u8>),
+    DateTime(Option<DateTime<chrono::Utc>>)
 }
 
 #[derive(Debug)]
 pub struct CanonnicalColumns {
     table_name: String,
-    values: HashMap<String, Vec<GenericData>>,
+    values: HashMap<String/*column_name*/, Vec<GenericData>>/*held value*/,
 }
 
 impl CanonnicalColumns {
