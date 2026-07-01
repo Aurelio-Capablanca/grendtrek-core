@@ -1,53 +1,70 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 
 use bb8_tiberius::ConnectionManager;
 use tiberius::{
-    ColumnType::{self, Int2}, Row, Uuid, numeric::Numeric, time::chrono::NaiveDateTime,
+    ColumnType::{self, Int2},
+    Row, Uuid,
+    numeric::Numeric,
+    time::{
+        Date,
+        chrono::{NaiveDate, NaiveDateTime},
+    },
 };
-
 
 use crate::internals::data_structures::database_metadata::{
     constraint_metadata::{
         IdentitySpecification,
         SQLConstraints::{self, PRIMARYKEY},
-    },
-    db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
-    table_data::{CanonnicalColumns, GenericData},
+    }, db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata}, table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
 };
 
-fn rows_to_canonnical(row: &Row) -> Result<Vec<CanonnicalColumns>, Box<dyn std::error::Error>> {
-    let data_columns: Vec<CanonnicalColumns> = Vec::new();
+fn rows_to_canonnical(row: &Row) -> Result<Vec<GenericDatasetDBMS>, Box<dyn std::error::Error>> {
+    let mut data_columns: Vec<GenericDatasetDBMS> = Vec::new();
 
     for (i, column) in row.columns().iter().enumerate() {
         let col_name = column.name();
         let col_type = column.column_type();
         let value = match col_type {
-            ColumnType::Int4 => GenericData::Int(row.get(i)),
-            ColumnType::Int2 => GenericData::SmallInt(row.get(i)),
-            ColumnType::Int1 => GenericData::Bit(row.get::<u8, _>(i).map(|data| data.to_be())),
+            ColumnType::Int4 => GenericDataSQLServer::Int(row.get(i)),
+            ColumnType::Int2 => GenericDataSQLServer::SmallInt(row.get(i)),
+            ColumnType::Int1 => {
+                GenericDataSQLServer::Bit(row.get::<u8, _>(i).map(|data| data.to_be()))
+            }
             ColumnType::NVarchar | ColumnType::NChar => {
-                GenericData::Text(row.get::<&str, _>(i).map(|data| data.to_string()))
+                GenericDataSQLServer::Text(row.get::<&str, _>(i).map(|data| data.to_string()))
+            }
+            ColumnType::BigVarChar => {
+                GenericDataSQLServer::Text(row.get::<&str, _>(i).map(|data| data.to_string()))
             }
             ColumnType::Datetime | ColumnType::Datetimen => {
                 let val: Option<NaiveDateTime> = row.get(i);
-                GenericData::DateTimeLocal(val)
+                GenericDataSQLServer::DateTimeLocal(val)
             }
-            ColumnType::Numericn => {
-                let numeric_n : Numeric = row.get(i).unwrap();
-                GenericData::Float(Some(f64::from(numeric_n)))
+            ColumnType::Daten => {
+                let val: Option<NaiveDate> = row.get(i);
+                GenericDataSQLServer::Date(val)
+            }
+            ColumnType::BigVarBin => {
+                let val :Option<Vec<u8>> = row.get::<&[u8], _>(i).map(|b| b.to_vec());
+                GenericDataSQLServer::BigBinary(val)
             },
-            ColumnType::Money => GenericData::Float(row.get(i)),            
-            ColumnType::Bit => GenericData::Bool(row.get(i)), 
-            ColumnType::Guid => {
-                let unique_id : Uuid = row.get(i).unwrap();
-                GenericData::Text(Some(unique_id.to_string()))
+            ColumnType::Numericn | ColumnType::Decimaln => {
+                let decimal_n: Numeric = row.get(i).unwrap_or_else(|| Numeric::new_with_scale(0, 0));
+                GenericDataSQLServer::Float(Some(f64::from(decimal_n)))
             }
-            _ => GenericData::Text(Some("nd".to_string())),
+            ColumnType::Money => GenericDataSQLServer::Float(row.get(i)),
+            ColumnType::Bit => GenericDataSQLServer::Bool(row.get(i)),
+            ColumnType::Guid => {
+                let unique_id: Uuid = row.get(i).unwrap();
+                GenericDataSQLServer::Text(Some(unique_id.to_string()))
+            }
+            _ => GenericDataSQLServer::Text(Some("nd".to_string())),
         };
         println!(
             "Column Name : {:?} | Column Type : {:?} | Column Value : {:?}",
             col_name, col_type, value
-        );
+        );        
+        data_columns.push(GenericDatasetDBMS::SQLSERVER(value));
     }
     Ok(data_columns)
 }
