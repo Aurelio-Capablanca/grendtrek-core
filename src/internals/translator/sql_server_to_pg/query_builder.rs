@@ -2,25 +2,25 @@ use std::{collections::HashMap, vec};
 
 use bb8_tiberius::ConnectionManager;
 use tiberius::{
-    ColumnType::{self, Int2},
+    ColumnType::{self},
     Row, Uuid,
     numeric::Numeric,
-    time::{
-        Date,
-        chrono::{NaiveDate, NaiveDateTime},
-    },
+    time::chrono::{NaiveDate, NaiveDateTime},
 };
 
 use crate::internals::data_structures::database_metadata::{
     constraint_metadata::{
         IdentitySpecification,
         SQLConstraints::{self, PRIMARYKEY},
-    }, db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata}, table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
+    },
+    db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
+    table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
 };
 
-fn rows_to_canonnical(row: &Row) -> Result<Vec<GenericDatasetDBMS>, Box<dyn std::error::Error>> {
-    let mut data_columns: Vec<GenericDatasetDBMS> = Vec::new();
-
+fn rows_to_canonnical<'a>(
+    row: &'a Row,
+) -> Result<HashMap<String, Vec<GenericDatasetDBMS>>, Box<dyn std::error::Error>> {
+    let mut data_columns: HashMap<String, Vec<GenericDatasetDBMS>> = HashMap::new();
     for (i, column) in row.columns().iter().enumerate() {
         let col_name = column.name();
         let col_type = column.column_type();
@@ -45,11 +45,12 @@ fn rows_to_canonnical(row: &Row) -> Result<Vec<GenericDatasetDBMS>, Box<dyn std:
                 GenericDataSQLServer::Date(val)
             }
             ColumnType::BigVarBin => {
-                let val :Option<Vec<u8>> = row.get::<&[u8], _>(i).map(|b| b.to_vec());
+                let val: Option<Vec<u8>> = row.get::<&[u8], _>(i).map(|b| b.to_vec());
                 GenericDataSQLServer::BigBinary(val)
-            },
+            }
             ColumnType::Numericn | ColumnType::Decimaln => {
-                let decimal_n: Numeric = row.get(i).unwrap_or_else(|| Numeric::new_with_scale(0, 0));
+                let decimal_n: Numeric =
+                    row.get(i).unwrap_or_else(|| Numeric::new_with_scale(0, 0));
                 GenericDataSQLServer::Float(Some(f64::from(decimal_n)))
             }
             ColumnType::Money => GenericDataSQLServer::Float(row.get(i)),
@@ -63,8 +64,9 @@ fn rows_to_canonnical(row: &Row) -> Result<Vec<GenericDatasetDBMS>, Box<dyn std:
         println!(
             "Column Name : {:?} | Column Type : {:?} | Column Value : {:?}",
             col_name, col_type, value
-        );        
-        data_columns.push(GenericDatasetDBMS::SQLSERVER(value));
+        );
+        let column_data = vec![GenericDatasetDBMS::SQLSERVER(value)];
+        data_columns.insert(col_name.to_string(), column_data);
     }
     Ok(data_columns)
 }
@@ -92,6 +94,7 @@ pub async fn get_rows_from_tables(
     tables_metadata: &HashMap<(String, String), TableMetadata>,
     connection: &mut bb8::PooledConnection<'_, ConnectionManager>,
 ) -> Result<bool, Box<dyn std::error::Error>> {
+    let mut cannon_col : Vec<CanonnicalColumns> = Vec::new();
     for metadata in tables_metadata {
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
@@ -130,7 +133,8 @@ pub async fn get_rows_from_tables(
             .await
             .unwrap();
         for row in rows_tables.iter() {
-            let canonical_row = rows_to_canonnical(&row);
+            let canonical_row = rows_to_canonnical(&row).unwrap();
+            cannon_col.push(CanonnicalColumns::new(table_key.0.to_string(), canonical_row));
         }
     }
     Ok(true)

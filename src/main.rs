@@ -189,6 +189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection).await?;
+  
     // fk ddl
     // create indexes (alter table) ddl
     // create default values ddl

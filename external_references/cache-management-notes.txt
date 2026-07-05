@@ -1,0 +1,33 @@
+Version 1 -> 
+
+HashMap<K, V>
+Unlimited size
+No eviction
+Focus on API design
+
+Version 2
+
+Fixed capacity
+FIFO eviction
+
+Now you begin asking:
+
+Why is FIFO bad?
+Under what workloads does it fail?
+
+LRU -> 
+
+doubly linked lists
+hash maps
+O(1) operations
+ownership in Rust
+
+
+
+TTL expiration -> 
+clocks
+timers
+lazy vs eager cleanup
+
+
+Plus ->     Concurrent access

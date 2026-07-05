@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 
-use tiberius::time::{
-    chrono::{self, DateTime, NaiveDate, NaiveDateTime},
-};
+use tiberius::time::chrono::{NaiveDate, NaiveDateTime};
 
 #[derive(Debug)]
 pub enum GenericDataSQLServer {
@@ -12,7 +10,7 @@ pub enum GenericDataSQLServer {
     Float(Option<f64>),
     Bool(Option<bool>),
     Bit(Option<u8>),
-    DateTimeLocal(Option<NaiveDateTime>),    
+    DateTimeLocal(Option<NaiveDateTime>),
     Date(Option<NaiveDate>),
     BigBinary(Option<Vec<u8>>),
 }
@@ -30,7 +28,18 @@ pub struct CanonnicalColumns {
 }
 
 impl CanonnicalColumns {
-    pub fn new(table_name: String, col_name: String, value: Vec<GenericDatasetDBMS>) -> Self {
+    pub fn new(table_name: String, cols: HashMap<String, Vec<GenericDatasetDBMS>>) -> Self {
+        Self {
+            table_name,
+            values: cols,
+        }
+    }
+
+    pub fn new_all_in(
+        table_name: String,
+        col_name: String,
+        value: Vec<GenericDatasetDBMS>,
+    ) -> Self {
         Self {
             table_name,
             values: HashMap::from([(col_name, value)]),
