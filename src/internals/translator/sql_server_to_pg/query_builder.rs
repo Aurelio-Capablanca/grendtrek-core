@@ -17,8 +17,8 @@ use crate::internals::data_structures::database_metadata::{
     table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
 };
 
-fn rows_to_canonnical<'a>(
-    row: &'a Row,
+fn rows_to_canonnical(
+    row: &Row,
 ) -> Result<HashMap<String, Vec<GenericDatasetDBMS>>, Box<dyn std::error::Error>> {
     let mut data_columns: HashMap<String, Vec<GenericDatasetDBMS>> = HashMap::new();
     for (i, column) in row.columns().iter().enumerate() {

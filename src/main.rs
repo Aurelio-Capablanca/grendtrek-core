@@ -154,7 +154,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         match pg_actions::create_new_collations(translate_collations, pg_pool).await {
             Ok(res) => res,
             Err(err) => {
-                eprint!("{}",err);
+                eprint!("{}", err);
                 false
             }
         };
@@ -189,7 +189,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection).await?;
-  
+
     // fk ddl
     // create indexes (alter table) ddl
     // create default values ddl
