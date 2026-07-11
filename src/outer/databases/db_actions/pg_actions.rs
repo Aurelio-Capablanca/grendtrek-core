@@ -38,11 +38,13 @@ pub async fn create_new_collations(
     for colls in translated {
         let collation_query = tx.execute(&colls, &[]).await;
         match collation_query {
-            Ok(_) => {
-                println!("Collation Created ! {:?}", colls)
+            Ok(coll) => {
+                println!("Collation Created ! {} {}", colls, coll)
             }
             Err(err) => {
                 tx.rollback().await?;
+                println!("Collation not created ! {}", colls);
+                eprintln!("Error as : {:?}",err);
                 return Err(Box::new(err));
             }
         }

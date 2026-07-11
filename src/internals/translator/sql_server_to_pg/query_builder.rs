@@ -61,10 +61,10 @@ fn rows_to_canonnical(
             }
             _ => GenericDataSQLServer::Text(Some("nd".to_string())),
         };
-        println!(
+        /*println!(
             "Column Name : {:?} | Column Type : {:?} | Column Value : {:?}",
             col_name, col_type, value
-        );
+        );*/
         let column_data = vec![GenericDatasetDBMS::SQLSERVER(value)];
         data_columns.insert(col_name.to_string(), column_data);
     }
@@ -98,11 +98,11 @@ pub async fn get_rows_from_tables(
     for metadata in tables_metadata {
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
-        println!(
+            /*println!(
             "total Rows in {}  is {}",
             table_metadata.get_table_name(),
             table_metadata.get_total_rows_as_ref()
-        );
+        );*/        
         let empty_otherwise = &SQLConstraints::PRIMARYKEY(IdentitySpecification::empty_struct());
         let pk_identifier = table_metadata
             .get_constrs_as_ref()
@@ -124,7 +124,7 @@ pub async fn get_rows_from_tables(
                 .unwrap()
                 .get_col_name_as_ref()
         );
-        println!("{:?}", query_build);
+        //println!("{:?}", query_build);
         let rows_tables = connection
             .query(query_build, &[])
             .await

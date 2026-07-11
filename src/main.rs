@@ -1,6 +1,7 @@
 use std::{
     collections::{HashMap, HashSet},
     env,
+    fmt::Pointer,
     io::Write,
 };
 
@@ -49,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json_collation_or = std::fs::read_to_string(collations_path_file); //.unwrap_or("".to_string());
     let string_cont = match json_collation_or {
         Ok(value) => {
-            println!("String from file! {:?}", value);
+            // println!("String from file! {:?}", value);
             value
         }
         Err(err) => {
@@ -69,9 +70,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     if collations.is_empty() {
         println!("Error at gathering collations!")
     }
-    collations
-        .iter()
-        .for_each(|data| println!("Collations: {:?}", data));
+    // collations
+    //     .iter()
+    //     .for_each(|data| println!("Collations: {:?}", data));
 
     //Non Elemental Access; Test actions
     //PostgreSQL Tester
@@ -116,11 +117,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut canonnical_model: HashMap<(String, String), TableMetadata> =
         sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
 
-    canonnical_model.iter().for_each(|data| {
-        let key = data.0;
-        let value = data.1;
-        println!("{:?} \n {:?}", key, value);
-    });
+    // canonnical_model.iter().for_each(|data| {
+    //     let key = data.0;
+    //     let value = data.1;
+    //     println!("{:?} \n {:?}", key, value);
+    // });
 
     // create schemas
     let schemas_cannonical: HashSet<String> = canonnical_model
@@ -150,14 +151,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     // 1.2 create collations
-    let collation_result =
-        match pg_actions::create_new_collations(translate_collations, pg_pool).await {
-            Ok(res) => res,
-            Err(err) => {
-                eprint!("{}", err);
-                false
-            }
-        };
+    let collation_result = pg_actions::create_new_collations(translate_collations, pg_pool).await;
+    match collation_result {
+        Ok(res) => {
+            println!("Collations created ! {}", res)
+        }
+        Err(err) => {
+            let unbox = err.as_ref().to_string();
+            eprintln!("Error at issue Collations : {}", unbox);
+        }
+    }
     // 2.0  issue ddl pk with tables
     //  --- type translation
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
@@ -202,8 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let file_exists =
         std::fs::metadata("/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql");
     let file_ddl = match file_exists {
-        Ok(metadata) => {
-            println!("{:?}", metadata);
+        Ok(_) => {
             std::fs::File::create("/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql")
         }
         Err(_) => {

@@ -65,7 +65,7 @@ pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<Stri
         match collation.get_destiny_engine_ref() {
             VendorOptions::POSTGRES => {
                 let mut collation_ddl = String::new();
-                collation_ddl.push_str("CREATE COLLATION \"");
+                collation_ddl.push_str("CREATE COLLATION IF NOT EXISTS \"");
                 let original_collation = match collation.get_collation_origin_ref() {
                     DBCollation::MSSQL(collation) => {collation.as_str()}
                     _=> {""}
