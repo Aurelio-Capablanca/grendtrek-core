@@ -56,3 +56,15 @@ CREATE COLLATION "SQL_Latin1_General_CP1_CI_AS" (
     LOCALE = 'en-u-ks-level2',
     DETERMINISTIC = false
 );
+
+also remember about 
+
+ICU =  International Components of Unicode Library !
+
+The anatomy of an ICU locale string
+<language>-<region>-u-<key>-<value>-<key>-<value>...
+Example: en-US-u-kn-true-ks-level2
+
+en-US —> the base language tag (BCP 47): language + optional region/script
+-u- —> introduces Unicode Consortium-specific options
+kn-true, ks-level2, etc. —> the "keyword" options tacked on after -u-

@@ -94,15 +94,37 @@ pub async fn get_rows_from_tables(
     tables_metadata: &HashMap<(String, String), TableMetadata>,
     connection: &mut bb8::PooledConnection<'_, ConnectionManager>,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-    let mut cannon_col : Vec<CanonnicalColumns> = Vec::new();
+    let mut cannon_col: Vec<CanonnicalColumns> = Vec::new();
     for metadata in tables_metadata {
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
-            /*println!(
+        println!(
             "total Rows in {}  is {}",
             table_metadata.get_table_name(),
             table_metadata.get_total_rows_as_ref()
-        );*/        
+        );
+
+        let mut next: i32 = 10;
+        let mut prev = 0;
+        let table_rows = *table_metadata.get_total_rows_as_ref();
+        if table_rows < 20 {
+            println!("on a row : {}", table_rows);
+        }
+        while next <= table_rows {
+            //loop {
+            next += 10;
+            if next > table_rows {
+                let res = next - table_rows;
+                next = next - res;
+                println!("substract here! {} by  {}", next, res);
+            }
+            prev = next;
+            println!("Index {} ", next);
+            if next == table_rows {
+                break;
+            }
+        }
+
         let empty_otherwise = &SQLConstraints::PRIMARYKEY(IdentitySpecification::empty_struct());
         let pk_identifier = table_metadata
             .get_constrs_as_ref()
@@ -134,7 +156,10 @@ pub async fn get_rows_from_tables(
             .unwrap();
         for row in rows_tables.iter() {
             let canonical_row = rows_to_canonnical(&row).unwrap();
-            cannon_col.push(CanonnicalColumns::new(table_key.0.to_string(), canonical_row));
+            cannon_col.push(CanonnicalColumns::new(
+                table_key.0.to_string(),
+                canonical_row,
+            ));
         }
     }
     Ok(true)
