@@ -103,13 +103,12 @@ pub async fn get_rows_from_tables(
             table_metadata.get_table_name(),
             table_metadata.get_total_rows_as_ref()
         );
-
-        let mut next: i32 = 10;
-        let mut prev = 0;
         let table_rows = *table_metadata.get_total_rows_as_ref();
-        if table_rows < 20 {
+        if table_rows < 10 {
             println!("on a row : {}", table_rows);
         }
+        let mut next: i32 = 10;
+        let mut prev = 0;
         while next <= table_rows {
             //loop {
             next += 10;
