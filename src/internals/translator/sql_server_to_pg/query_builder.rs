@@ -96,6 +96,7 @@ pub async fn get_rows_from_tables(
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut cannon_col: Vec<CanonnicalColumns> = Vec::new();
     for metadata in tables_metadata {
+        let empty_otherwise = &SQLConstraints::PRIMARYKEY(IdentitySpecification::empty_struct());
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
         println!(
@@ -110,56 +111,53 @@ pub async fn get_rows_from_tables(
         let mut next: i32 = 10;
         let mut prev = 0;
         while next <= table_rows {
-            //loop {
             next += 10;
             if next > table_rows {
                 let res = next - table_rows;
                 next = next - res;
-                println!("substract here! {} by  {}", next, res);
+            }
+            println!("Current {} | Prev {}", next, prev);
+            //Do the query!
+            let pk_identifier = table_metadata
+                .get_constrs_as_ref()
+                .iter()
+                .find(|pred| match pred {
+                    PRIMARYKEY(_) => true,
+                    _ => false,
+                })
+                .unwrap_or(empty_otherwise);
+            let columns_query = query_builder(table_metadata.get_cols_as_ref());
+            let query_build = format!(
+                "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;",
+                columns_query,
+                table_key.1,
+                table_key.0,
+                //Offset
+                // Next
+                pk_identifier
+                    .get_pk_ref_opt()
+                    .unwrap()
+                    .get_col_name_as_ref()
+            );        
+            let rows_tables = connection
+                .query(query_build, &[])
+                .await
+                .unwrap()
+                .into_first_result()
+                .await
+                .unwrap();
+            for row in rows_tables.iter() {
+                let canonical_row = rows_to_canonnical(&row).unwrap();
+                cannon_col.push(CanonnicalColumns::new(
+                    table_key.0.to_string(),
+                    canonical_row,
+                ));
             }
             prev = next;
-            println!("Index {} ", next);
             if next == table_rows {
                 break;
             }
-        }
-
-        let empty_otherwise = &SQLConstraints::PRIMARYKEY(IdentitySpecification::empty_struct());
-        let pk_identifier = table_metadata
-            .get_constrs_as_ref()
-            .iter()
-            .find(|pred| match pred {
-                PRIMARYKEY(_) => true,
-                _ => false,
-            })
-            .unwrap_or(empty_otherwise);
-        let columns_query = query_builder(table_metadata.get_cols_as_ref());
-        // implement cicles for limits
-        let query_build = format!(
-            "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;",
-            columns_query,
-            table_key.1,
-            table_key.0,
-            pk_identifier
-                .get_pk_ref_opt()
-                .unwrap()
-                .get_col_name_as_ref()
-        );
-        //println!("{:?}", query_build);
-        let rows_tables = connection
-            .query(query_build, &[])
-            .await
-            .unwrap()
-            .into_first_result()
-            .await
-            .unwrap();
-        for row in rows_tables.iter() {
-            let canonical_row = rows_to_canonnical(&row).unwrap();
-            cannon_col.push(CanonnicalColumns::new(
-                table_key.0.to_string(),
-                canonical_row,
-            ));
-        }
+        }        
     }
     Ok(true)
 }
