@@ -128,17 +128,17 @@ pub async fn get_rows_from_tables(
                 .unwrap_or(empty_otherwise);
             let columns_query = query_builder(table_metadata.get_cols_as_ref());
             let query_build = format!(
-                "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET 0 ROWS FETCH NEXT 10 ROWS ONLY;",
+                "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
                 columns_query,
                 table_key.1,
                 table_key.0,
-                //Offset
-                // Next
+                prev, //Offset
+                next, // Next
                 pk_identifier
                     .get_pk_ref_opt()
                     .unwrap()
                     .get_col_name_as_ref()
-            );        
+            );
             let rows_tables = connection
                 .query(query_build, &[])
                 .await
@@ -157,7 +157,7 @@ pub async fn get_rows_from_tables(
             if next == table_rows {
                 break;
             }
-        }        
+        }
     }
     Ok(true)
 }
