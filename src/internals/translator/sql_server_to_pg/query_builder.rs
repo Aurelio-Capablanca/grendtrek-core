@@ -131,14 +131,15 @@ pub async fn get_rows_from_tables(
                 "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
                 columns_query,
                 table_key.1,
-                table_key.0,
-                prev, //Offset
-                next, // Next
+                table_key.0,                
                 pk_identifier
                     .get_pk_ref_opt()
                     .unwrap()
-                    .get_col_name_as_ref()
+                    .get_col_name_as_ref(),
+                prev, //Offset
+                next, // Next
             );
+            println!("{}",query_build);
             let rows_tables = connection
                 .query(query_build, &[])
                 .await

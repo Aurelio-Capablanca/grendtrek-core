@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
     env,
-    fmt::Pointer,
     io::Write,
 };
 
