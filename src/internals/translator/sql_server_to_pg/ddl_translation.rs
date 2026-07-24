@@ -1,4 +1,4 @@
-use std::{collections::HashMap};
+use std::{collections::HashMap, ops::ControlFlow};
 
 use crate::internals::data_structures::{
     database_connector_spec::VendorOptions,
@@ -67,8 +67,8 @@ pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<Stri
                 let mut collation_ddl = String::new();
                 collation_ddl.push_str("CREATE COLLATION IF NOT EXISTS \"");
                 let original_collation = match collation.get_collation_origin_ref() {
-                    DBCollation::MSSQL(collation) => {collation.as_str()}
-                    _=> {""}
+                    DBCollation::MSSQL(collation) => collation.as_str(),
+                    _ => "",
                 };
                 collation_ddl.push_str(original_collation);
                 collation_ddl.push_str("\" (");
@@ -144,6 +144,8 @@ fn build_pks(
     pk_ddl
 }
 
+
+
 pub fn translate_ddl(
     structs_table: &HashMap<(String, String), TableMetadata>,
     types_conversion: Vec<&TypeMapper>,
@@ -160,7 +162,7 @@ pub fn translate_ddl(
         ddl_generation.push_str(".");
         ddl_generation.push_str(&table_keys.0);
         ddl_generation.push_str(" (");
-        let field_spec = columns
+        let field_spec: String = columns
             .iter()
             .map(|column| {
                 if let Some(p_key) = constraints.iter().find(|pred| match pred {
@@ -170,11 +172,11 @@ pub fn translate_ddl(
                     _ => false,
                 }) {
                     //PK column
-                    if let Some(key) = p_key.get_pk_ref_opt() {
-                        build_pks(column, key, &types_conversion)
-                    } else {
-                        "".to_string()
-                    }
+                if let Some(key) = p_key.get_pk_ref_opt() {
+                    build_pks(column, key, &types_conversion)
+                } else {
+                    "".to_string()
+                }
                 } else {
                     // regular column!
                     match build_columns(column, &types_conversion) {
@@ -186,6 +188,22 @@ pub fn translate_ddl(
             .collect::<Vec<String>>()
             .join(",");
         ddl_generation.push_str(&field_spec);
+        // //do muiltiple PK declaration
+        
+        // let pk_s: String = constraints
+        //     .iter()
+        //     .filter(|pred| match pred {
+        //         SQLConstraints::PRIMARYKEY(_) => true,
+        //         _=> false
+        //     })
+        //     .map(|constraint| {
+        //         if let Some(prim_key) = constraint.get_pk_ref_opt(){
+                    
+        //         }
+        //         "".to_string()
+        //     })
+        //     .collect::<Vec<String>>()
+        //     .join(",");
         ddl_generation.push_str(");");
         ddl_content.push(ddl_generation);
     });
