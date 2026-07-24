@@ -44,7 +44,7 @@ pub async fn create_new_collations(
             Err(err) => {
                 tx.rollback().await?;
                 println!("Collation not created ! {}", colls);
-                eprintln!("Error as : {:?}",err);
+                eprintln!("Error as : {:?}", err);
                 return Err(Box::new(err));
             }
         }
@@ -53,4 +53,25 @@ pub async fn create_new_collations(
     Ok(true)
 }
 
-//pub async fn create_tables(){}
+pub async fn create_tables(
+    ddl_instruction: &Vec<String>,
+    connection: &mut PgPoolHandler,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut conn_pg = connection.pg_pool.get().await.unwrap();
+    let tx = conn_pg.transaction().await.unwrap();
+    for ddl in ddl_instruction {
+        let ddl_query = tx.execute(ddl, &[]).await;
+        match ddl_query {
+            Ok(res) => {
+                println!("Table created {} | DB signal {}",ddl,res)
+            }
+            Err(err) => {                
+                eprintln!("Error at Creating table : {:?}", err);
+                tx.rollback().await.unwrap();
+                return Err(Box::new(err));
+            }
+        }
+    }
+    tx.commit().await.unwrap();
+    Ok(())
+}

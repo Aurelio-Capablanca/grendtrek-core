@@ -10,14 +10,9 @@ mod outer;
 use crate::{
     internals::{
         data_structures::{
-            database_connector_spec::{DatabaseConnector, DatabaseHandlers, VendorOptions},
-            database_metadata::db_metadata::cannonical_tables::TableMetadata,
-            database_types::{collation::Collations, query::Query, types::TypeMapper},
-            db_reg::DatabaseRegistry,
-        },
-        translator::sql_server_to_pg::{ddl_translation, query_builder},
-    },
-    outer::databases::db_actions::pg_actions,
+            database_connector_spec::{DatabaseConnector, DatabaseHandlers, PgPoolHandler, VendorOptions}, database_metadata::db_metadata::cannonical_tables::TableMetadata, database_types::{collation::Collations, query::Query, types::TypeMapper}, db_reg::DatabaseRegistry,
+        }, translator::sql_server_to_pg::{ddl_translation, query_builder},
+    }, outer::databases::db_actions::pg_actions,
 };
 
 use crate::outer::databases::{
@@ -172,7 +167,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 ).collect::<Vec<&TypeMapper>>();
     // --- DDL generation
-    let ddl_for_pg = match ddl_translation::translate_ddl(&mut canonnical_model, type_conversion) {
+    let ddl_for_pg : Vec<String> = match ddl_translation::translate_ddl(&mut canonnical_model, type_conversion) {
         Ok(value) => {
             //value.iter().for_each(|data| println!("{:?} \n", data));
             value
@@ -182,15 +177,32 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             Vec::new()
         }
     };
-    //test type detection
+    //create Tables 
+    let pg_con : &mut PgPoolHandler = match destiny {
+        DatabaseHandlers::PostgresPool(pg_pool) => {
+            pg_pool
+        },
+        _=> {
+            panic!("No connection")
+        }
+    };
+    let res_actions = pg_actions::create_tables(&ddl_for_pg, pg_con).await;
+    match res_actions {
+        Ok(_) => {
+            println!("Tables Created!")
+        },
+        Err(err) => {
+            eprintln!("Error at creating tables in destination : {}",err)
+        }
+    }
+    //do the Data migration
     let mut connection = match origin {
         DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
         _ => {
             panic!("No connection ?")
         }
-    };
-    let result_types =
-        query_builder::get_rows_from_tables(&canonnical_model, &mut connection).await?;
+    };    
+    //let result_types = query_builder::get_rows_from_tables(&canonnical_model, &mut connection).await?;
 
     // fk ddl
     // create indexes (alter table) ddl

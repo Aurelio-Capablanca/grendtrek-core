@@ -155,11 +155,11 @@ pub fn translate_ddl(
         let table_metadata: &TableMetadata = struct_table.1;
         let columns = table_metadata.get_cols_as_ref();
         let constraints = table_metadata.get_constrs_as_ref();
-        ddl_generation.push_str("create table \"");
+        ddl_generation.push_str("create table ");
         ddl_generation.push_str(&table_keys.1);
-        ddl_generation.push_str("\".\"");
+        ddl_generation.push_str(".");
         ddl_generation.push_str(&table_keys.0);
-        ddl_generation.push_str("\" (");
+        ddl_generation.push_str(" (");
         let field_spec = columns
             .iter()
             .map(|column| {
