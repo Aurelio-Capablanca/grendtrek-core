@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::ControlFlow};
+use std::collections::HashMap;
 
 use crate::internals::data_structures::{
     database_connector_spec::VendorOptions,
@@ -16,10 +16,8 @@ use crate::internals::data_structures::{
 };
 
 fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
-    let mut column_ddl = String::new();
-    column_ddl.push_str("\"");
-    column_ddl.push_str(column.get_column_name());
-    column_ddl.push_str("\"");
+    let mut column_ddl = String::new();    
+    column_ddl.push_str(column.get_column_name());    
     column_ddl.push_str(" ");
     let empty_type = &&TypeMapper::empty_struct();
     let new_type = types_conversion
@@ -144,7 +142,24 @@ fn build_pks(
     pk_ddl
 }
 
-
+fn build_pk_mult(pks: &Vec<SQLConstraints>, constraint_name: &str) -> String {
+    let mut pk_ddl = String::new();
+    pk_ddl.push_str(" CONSTRAINT ");
+    pk_ddl.push_str(constraint_name);
+    pk_ddl.push_str(" PRIMARY KEY (");
+    let pk_col_names = pks
+        .iter()
+        .filter(|pred| match pred {
+            SQLConstraints::PRIMARYKEY(_) => true,
+            _ => false,
+        })
+        .map(|data| data.get_pk_ref_opt().unwrap().get_col_name_as_ref())
+        .collect::<Vec<&str>>()
+        .join(", ");
+    pk_ddl.push_str(&pk_col_names);
+    pk_ddl.push_str(" )");
+    pk_ddl
+}
 
 pub fn translate_ddl(
     structs_table: &HashMap<(String, String), TableMetadata>,
@@ -157,6 +172,13 @@ pub fn translate_ddl(
         let table_metadata: &TableMetadata = struct_table.1;
         let columns = table_metadata.get_cols_as_ref();
         let constraints = table_metadata.get_constrs_as_ref();
+        let num_pks: usize = constraints
+            .into_iter()
+            .filter(|pred| match pred {
+                SQLConstraints::PRIMARYKEY(_) => true,
+                _ => false,
+            })
+            .count();
         ddl_generation.push_str("create table ");
         ddl_generation.push_str(&table_keys.1);
         ddl_generation.push_str(".");
@@ -170,13 +192,14 @@ pub fn translate_ddl(
                         pk.get_col_name_as_ref().eq(column.get_column_name())
                     }
                     _ => false,
-                }) {
+                }) && num_pks == 1
+                {
                     //PK column
-                if let Some(key) = p_key.get_pk_ref_opt() {
-                    build_pks(column, key, &types_conversion)
-                } else {
-                    "".to_string()
-                }
+                    if let Some(key) = p_key.get_pk_ref_opt() {
+                        build_pks(column, key, &types_conversion)
+                    } else {
+                        "".to_string()
+                    }
                 } else {
                     // regular column!
                     match build_columns(column, &types_conversion) {
@@ -188,25 +211,24 @@ pub fn translate_ddl(
             .collect::<Vec<String>>()
             .join(",");
         ddl_generation.push_str(&field_spec);
-        // //do muiltiple PK declaration
-        
-        // let pk_s: String = constraints
-        //     .iter()
-        //     .filter(|pred| match pred {
-        //         SQLConstraints::PRIMARYKEY(_) => true,
-        //         _=> false
-        //     })
-        //     .map(|constraint| {
-        //         if let Some(prim_key) = constraint.get_pk_ref_opt(){
-                    
-        //         }
-        //         "".to_string()
-        //     })
-        //     .collect::<Vec<String>>()
-        //     .join(",");
+        if num_pks > 1 {
+            ddl_generation.push_str(", ");
+            let constraint_name = constraints
+                .iter()
+                .filter(|pred| match pred {
+                    SQLConstraints::PRIMARYKEY(_) => true,
+                    _ => false,
+                })
+                .collect::<Vec<&SQLConstraints>>()
+                .get(0)
+                .unwrap()
+                .get_pk_ref_opt()
+                .unwrap()
+                .get_pk_name_as_ref();
+            ddl_generation.push_str(&build_pk_mult(constraints, constraint_name));            
+        }
         ddl_generation.push_str(");");
         ddl_content.push(ddl_generation);
     });
-
     Ok(ddl_content)
 }
