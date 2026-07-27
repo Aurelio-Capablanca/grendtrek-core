@@ -173,5 +173,12 @@
     "type_origin": "AccountNumber",
     "type_destiny": "VARCHAR",
     "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "sysname",
+    "type_destiny": "VARCHAR",
+    "is_precision": false
   }
 ]

@@ -63,9 +63,10 @@ pub async fn create_tables(
         let ddl_query = tx.execute(ddl, &[]).await;
         match ddl_query {
             Ok(res) => {
-                println!("Table created {} | DB signal {}",ddl,res)
+                println!("************************* \n Table created {} | DB signal {}", ddl, res)
             }
-            Err(err) => {                
+            Err(err) => {
+                println!("************************* \n Failed to create table as : \n{}",ddl);
                 eprintln!("Error at Creating table : {:?}", err);
                 tx.rollback().await.unwrap();
                 return Err(Box::new(err));

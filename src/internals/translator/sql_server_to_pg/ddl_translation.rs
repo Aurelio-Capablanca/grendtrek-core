@@ -24,14 +24,9 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
         .iter()
         .find(|type_origin| type_origin.get_type_origin().eq(column.get_data_type()))
         .unwrap_or_else(|| empty_type)
-        .get_type_destiny();
-    
-    if new_type.eq(empty_type.get_type_destiny()){
-        println!("Origin Type : {} at column : {}",column.get_data_type(),column.get_column_name());
-    }
-    
+        .get_type_destiny();    
     column_ddl.push_str(new_type);
-    if column.get_lenght_field() > &0 {
+    if column.get_lenght_field() > &0 && !new_type.eq_ignore_ascii_case("TEXT") {
         column_ddl.push_str("(");
         column_ddl.push_str(&column.get_lenght_field().to_string());
         column_ddl.push_str(") ");
@@ -97,7 +92,7 @@ pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<Stri
     Some(collations_ddl)
 }
 
-fn build_constraints() {}
+//fn build_constraints() {}
 
 fn build_pks(
     col_def: &ColumnMembers,

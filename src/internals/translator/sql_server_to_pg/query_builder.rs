@@ -60,11 +60,7 @@ fn rows_to_canonnical(
                 GenericDataSQLServer::Text(Some(unique_id.to_string()))
             }
             _ => GenericDataSQLServer::Text(Some("nd".to_string())),
-        };
-        /*println!(
-            "Column Name : {:?} | Column Type : {:?} | Column Value : {:?}",
-            col_name, col_type, value
-        );*/
+        };       
         let column_data = vec![GenericDatasetDBMS::SQLSERVER(value)];
         data_columns.insert(col_name.to_string(), column_data);
     }
