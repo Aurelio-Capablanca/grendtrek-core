@@ -131,5 +131,47 @@
     "type_origin": "varbinary",
     "type_destiny": "BIT",
     "is_precision": false
+  }, 
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "Flag",
+    "type_destiny": "BOOLEAN",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "NameStyle",
+    "type_destiny": "BOOLEAN",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "Name",
+    "type_destiny": "VARCHAR",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "OrderNumber",
+    "type_destiny": "VARCHAR",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "Phone",
+    "type_destiny": "VARCHAR",
+    "is_precision": false
+  },
+  {
+    "engine_origin": "MSSQL",
+    "engine_destiny": "POSTGRES",
+    "type_origin": "AccountNumber",
+    "type_destiny": "VARCHAR",
+    "is_precision": false
   }
 ]

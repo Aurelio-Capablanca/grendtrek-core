@@ -25,6 +25,11 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
         .find(|type_origin| type_origin.get_type_origin().eq(column.get_data_type()))
         .unwrap_or_else(|| empty_type)
         .get_type_destiny();
+    
+    if new_type.eq(empty_type.get_type_destiny()){
+        println!("Origin Type : {} at column : {}",column.get_data_type(),column.get_column_name());
+    }
+    
     column_ddl.push_str(new_type);
     if column.get_lenght_field() > &0 {
         column_ddl.push_str("(");
