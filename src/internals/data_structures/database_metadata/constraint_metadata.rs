@@ -1,3 +1,5 @@
+use crate::internals::data_structures::database_connector_spec::VendorOptions::NONE;
+
 #[derive(Debug)]
 pub enum SQLConstraints {
     PRIMARYKEY(IdentitySpecification),
@@ -13,6 +15,13 @@ impl SQLConstraints {
         match self {
             SQLConstraints::PRIMARYKEY(pk) => Some(pk),
             _ => { None }
+        }
+    }
+    
+    pub fn get_fk_ref_opt(&self) -> Option<&ForeignKeys> {
+        match self {
+            SQLConstraints::FOREIGNKEY(fk) => Some(fk),
+            _=> { None }
         }
     }
 }
