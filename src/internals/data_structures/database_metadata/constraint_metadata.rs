@@ -1,10 +1,8 @@
-use crate::internals::data_structures::database_connector_spec::VendorOptions::NONE;
 
 #[derive(Debug)]
 pub enum SQLConstraints {
     PRIMARYKEY(IdentitySpecification),
     FOREIGNKEY(ForeignKeys),
-    //UNIQUE,
     CHECK(ComputedSpecification),
     DEFAULT(ComputedSpecification),
     COMPUTED(ComputedSpecification),
@@ -14,14 +12,28 @@ impl SQLConstraints {
     pub fn get_pk_ref_opt(&self) -> Option<&IdentitySpecification> {
         match self {
             SQLConstraints::PRIMARYKEY(pk) => Some(pk),
-            _ => { None }
+            _ => None,
         }
     }
-    
+
     pub fn get_fk_ref_opt(&self) -> Option<&ForeignKeys> {
         match self {
             SQLConstraints::FOREIGNKEY(fk) => Some(fk),
-            _=> { None }
+            _ => None,
+        }
+    }
+
+    pub fn get_chk_ref_opt(&self) -> Option<&ComputedSpecification> {
+        match self {
+            SQLConstraints::CHECK(chk) => Some(chk),
+            _ => None,
+        }
+    }
+
+    pub fn get_def_ref_opt(&self) -> Option<&ComputedSpecification> {
+        match self {
+            SQLConstraints::DEFAULT(def) => Some(def),
+            _ => None,
         }
     }
 }
@@ -73,23 +85,23 @@ impl IdentitySpecification {
     pub fn get_pk_name_as_ref(&self) -> &str {
         &self.pk_name
     }
-    
+
     pub fn get_type_pk_as_ref(&self) -> &str {
         &self.data_type
     }
-    
+
     pub fn get_increment_by_as_ref(&self) -> &i32 {
         &self.increment_by.as_ref().unwrap_or_else(|| &0)
     }
-    
+
     pub fn get_last_value_as_ref(&self) -> &i64 {
         &self.last_value.as_ref().unwrap_or_else(|| &0)
     }
-    
+
     pub fn get_datatype_as_ref(&self) -> &str {
         &self.data_type
     }
-     
+
     pub fn get_table_name_as_ref(&self) -> &str {
         &self.table_name
     }

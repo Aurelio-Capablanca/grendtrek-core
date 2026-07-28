@@ -1,4 +1,9 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    sync::{Arc, LazyLock},
+};
+
+use tokio::sync::Mutex;
 
 use crate::internals::data_structures::{
     database_connector_spec::VendorOptions,
@@ -15,17 +20,26 @@ use crate::internals::data_structures::{
     },
 };
 
+static SQL_RESERVED: LazyLock<Vec<&str>> = LazyLock::new(|| {
+    println!("initializing");    
+    Vec::from(["Group", "System"])
+});
+
 fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
-    let mut column_ddl = String::new();    
-    column_ddl.push_str(column.get_column_name());    
+    let mut column_ddl = String::new();
+    column_ddl.push_str(column.get_column_name());
     column_ddl.push_str(" ");
     let empty_type = &&TypeMapper::empty_struct();
     let new_type = types_conversion
         .iter()
         .find(|type_origin| type_origin.get_type_origin().eq(column.get_data_type()))
         .unwrap_or_else(|| empty_type)
-        .get_type_destiny();    
+        .get_type_destiny();
     column_ddl.push_str(new_type);
+
+    let reserved = SQL_RESERVED.iter().for_each(|d| println!("{}", d));
+    
+
     if column.get_lenght_field() > &0 && !new_type.eq_ignore_ascii_case("TEXT") {
         column_ddl.push_str("(");
         column_ddl.push_str(&column.get_lenght_field().to_string());
@@ -225,7 +239,7 @@ pub fn translate_ddl(
                 .get_pk_ref_opt()
                 .unwrap()
                 .get_pk_name_as_ref();
-            ddl_generation.push_str(&build_pk_mult(constraints, constraint_name));            
+            ddl_generation.push_str(&build_pk_mult(constraints, constraint_name));
         }
         ddl_generation.push_str(");");
         ddl_content.push(ddl_generation);
