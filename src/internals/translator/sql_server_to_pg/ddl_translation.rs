@@ -21,13 +21,22 @@ use crate::internals::data_structures::{
 };
 
 static SQL_RESERVED: LazyLock<Vec<&str>> = LazyLock::new(|| {
-    println!("initializing");    
-    Vec::from(["Group", "System"])
+    println!("initializing");
+    Vec::from(["Group", "System", "Primary"])
 });
 
 fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
     let mut column_ddl = String::new();
-    column_ddl.push_str(column.get_column_name());
+    let column_fix = column
+        .get_column_name()
+        .to_ascii_lowercase()
+        .replace(" ", "_");    
+    if SQL_RESERVED.iter().any(|pred| pred.eq_ignore_ascii_case(column.get_column_name())) {
+        column_ddl.push_str(&column_fix);
+        column_ddl.push_str("_column");
+    } else {
+        column_ddl.push_str(&column_fix);
+    }
     column_ddl.push_str(" ");
     let empty_type = &&TypeMapper::empty_struct();
     let new_type = types_conversion
@@ -36,9 +45,6 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
         .unwrap_or_else(|| empty_type)
         .get_type_destiny();
     column_ddl.push_str(new_type);
-
-    let reserved = SQL_RESERVED.iter().for_each(|d| println!("{}", d));
-    
 
     if column.get_lenght_field() > &0 && !new_type.eq_ignore_ascii_case("TEXT") {
         column_ddl.push_str("(");
