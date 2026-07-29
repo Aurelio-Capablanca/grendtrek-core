@@ -1,9 +1,8 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, LazyLock},
+    sync::LazyLock,
 };
 
-use tokio::sync::Mutex;
 
 use crate::internals::data_structures::{
     database_connector_spec::VendorOptions,
@@ -25,13 +24,30 @@ static SQL_RESERVED: LazyLock<Vec<&str>> = LazyLock::new(|| {
     Vec::from(["Group", "System", "Primary"])
 });
 
+fn postgre_sql_format(original: &str) -> String {
+    let middlepoint = original.chars();
+    let mut fix = String::new();
+    for (i, chars) in middlepoint.enumerate() {
+        if chars.is_whitespace() {
+            continue;
+        }
+        if chars.is_ascii_uppercase() && i > 0 {
+            fix.push('_');
+            fix.push(chars.to_ascii_lowercase());
+        } else {
+            fix.push(chars.to_ascii_lowercase());
+        }
+    }
+    fix
+}
+
 fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) -> Option<String> {
     let mut column_ddl = String::new();
-    let column_fix = column
-        .get_column_name()
-        .to_ascii_lowercase()
-        .replace(" ", "_");    
-    if SQL_RESERVED.iter().any(|pred| pred.eq_ignore_ascii_case(column.get_column_name())) {
+    let column_fix = postgre_sql_format(column.get_column_name());
+    if SQL_RESERVED
+        .iter()
+        .any(|pred| pred.eq_ignore_ascii_case(column.get_column_name()))
+    {
         column_ddl.push_str(&column_fix);
         column_ddl.push_str("_column");
     } else {
