@@ -11,10 +11,11 @@ pub async fn create_schemas(
             let pg_client = &mut client.pg_pool.get().await.unwrap();
             let tx = pg_client.transaction().await.unwrap();
             for schema in schema_names {
-                let query = tx.execute(schema, &[]).await;
+                let schema_name = &schema.to_ascii_lowercase().to_string();
+                let query = tx.execute(schema_name, &[]).await;                
                 match query {
                     Ok(_) => {
-                        println!("Schema created ! {:?}", schema)
+                        println!("Schema created ! {:?}", schema_name)
                     }
                     Err(err) => {
                         tx.rollback().await?;

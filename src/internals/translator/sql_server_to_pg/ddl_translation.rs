@@ -1,8 +1,4 @@
-use std::{
-    collections::HashMap,
-    sync::LazyLock,
-};
-
+use std::{collections::HashMap, sync::LazyLock};
 
 use crate::internals::data_structures::{
     database_connector_spec::VendorOptions,
@@ -136,9 +132,8 @@ fn build_pks(
     mapper_type: &Vec<&TypeMapper>,
 ) -> String {
     let mut pk_ddl = String::new();
-    pk_ddl.push_str("\"");
-    pk_ddl.push_str(pk_col.get_col_name_as_ref());
-    pk_ddl.push_str("\"");
+    let pg_pk_ren = postgre_sql_format(pk_col.get_col_name_as_ref());
+    pk_ddl.push_str(&pg_pk_ren);
     let empty_type = &&TypeMapper::empty_struct();
     let type_destiny = mapper_type
         .iter()
@@ -181,7 +176,8 @@ fn build_pks(
 fn build_pk_mult(pks: &Vec<SQLConstraints>, constraint_name: &str) -> String {
     let mut pk_ddl = String::new();
     pk_ddl.push_str(" CONSTRAINT ");
-    pk_ddl.push_str(constraint_name);
+    let pg_constraint_ren = postgre_sql_format(constraint_name);
+    pk_ddl.push_str(&pg_constraint_ren);
     pk_ddl.push_str(" PRIMARY KEY (");
     let pk_col_names = pks
         .iter()
@@ -189,8 +185,12 @@ fn build_pk_mult(pks: &Vec<SQLConstraints>, constraint_name: &str) -> String {
             SQLConstraints::PRIMARYKEY(_) => true,
             _ => false,
         })
-        .map(|data| data.get_pk_ref_opt().unwrap().get_col_name_as_ref())
-        .collect::<Vec<&str>>()
+        .map(|data| {
+            let prev_name = data.get_pk_ref_opt().unwrap().get_col_name_as_ref();
+            let pg_name = postgre_sql_format(prev_name);
+            pg_name
+        })
+        .collect::<Vec<String>>()
         .join(", ");
     pk_ddl.push_str(&pk_col_names);
     pk_ddl.push_str(" )");
