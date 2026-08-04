@@ -21,15 +21,34 @@ static SQL_RESERVED: LazyLock<Vec<&str>> = LazyLock::new(|| {
 });
 
 fn postgre_sql_format(original: &str) -> String {
-    let middlepoint = original.chars();
+    let middlepoint = if original
+        .chars()
+        .into_iter()
+        .any(|lbm| lbm.eq_ignore_ascii_case(&'_'))
+    {
+        original
+            .chars()
+            .map(|pred| pred.to_ascii_lowercase())
+            .collect::<Vec<char>>()
+    } else {
+        original.chars().collect::<Vec<char>>()
+    };    
     let mut fix = String::new();
-    for (i, chars) in middlepoint.enumerate() {
+    let mut next = ' ';
+    for (i, chars) in middlepoint.iter().enumerate() {
+        if !next.eq_ignore_ascii_case(&' ') {
+            fix.push(next.to_ascii_lowercase());
+            continue;
+        }
         if chars.is_whitespace() {
             continue;
         }
         if chars.is_ascii_uppercase() && i > 0 {
             fix.push('_');
             fix.push(chars.to_ascii_lowercase());
+            if middlepoint.get(i + 1).unwrap().is_uppercase() {
+                next = *middlepoint.get(i + 1).unwrap();
+            }
         } else {
             fix.push(chars.to_ascii_lowercase());
         }
@@ -118,13 +137,11 @@ pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<Stri
                 }
                 collations_ddl.push(collation_ddl);
             }
-            _ => {} // other cases doesn't apply since here's just for MSSQL to PG
+            _ => {} 
         }
     }
     Some(collations_ddl)
 }
-
-//fn build_constraints() {}
 
 fn build_pks(
     col_def: &ColumnMembers,
@@ -142,7 +159,6 @@ fn build_pks(
         .get_type_destiny();
     pk_ddl.push_str(" ");
     pk_ddl.push_str(type_destiny);
-    //precision type if present!
     pk_ddl.push_str(" ");
     if *col_def.get_is_identity()
         && pk_col.get_last_value_as_ref() > &0
