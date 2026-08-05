@@ -15,9 +15,8 @@ use crate::internals::data_structures::{
     },
 };
 
-static SQL_RESERVED: LazyLock<Vec<&str>> = LazyLock::new(|| {
-    println!("initializing");
-    Vec::from(["Group", "System", "Primary"])
+static SQL_RESERVED: LazyLock<Vec<&str>> = LazyLock::new(|| {    
+    Vec::from(["Group", "System", "Primary", "Cursor"])
 });
 
 fn postgre_sql_format(original: &str) -> String {
@@ -96,9 +95,8 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     }
     column_ddl.push_str(" ");
     if !column.get_collation().is_empty() {
-        column_ddl.push_str("COLLATE \"");
+        column_ddl.push_str("COLLATE ");
         column_ddl.push_str(column.get_collation());
-        column_ddl.push_str("\"  ");
     }
     if *column.get_is_nullable() {
         column_ddl.push_str("NULL");
@@ -114,13 +112,14 @@ pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<Stri
         match collation.get_destiny_engine_ref() {
             VendorOptions::POSTGRES => {
                 let mut collation_ddl = String::new();
-                collation_ddl.push_str("CREATE COLLATION IF NOT EXISTS \"");
+                collation_ddl.push_str("CREATE COLLATION IF NOT EXISTS ");
                 let original_collation = match collation.get_collation_origin_ref() {
                     DBCollation::MSSQL(collation) => collation.as_str(),
                     _ => "",
                 };
-                collation_ddl.push_str(original_collation);
-                collation_ddl.push_str("\" (");
+                let pg_coll_ren = postgre_sql_format(original_collation);
+                collation_ddl.push_str(&pg_coll_ren);
+                collation_ddl.push_str(" (");
                 match collation.get_collation_destiny_ref() {
                     DBCollation::POSTGRES(collations) => {
                         collation_ddl.push_str("PROVIDER = '");
