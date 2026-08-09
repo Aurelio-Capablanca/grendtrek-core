@@ -67,7 +67,7 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, Vec<GenericDatasetDBM
     Ok(data_columns)
 }
 
-fn query_builder(columns: &Vec<ColumnMembers>) -> String {
+fn column_query_builder(columns: &Vec<ColumnMembers>) -> String {
     columns
         .iter()
         .map(|col| {
@@ -123,12 +123,12 @@ pub async fn get_rows_from_tables(
                     _ => false,
                 })
                 .unwrap_or(empty_otherwise);
-            let columns_query = query_builder(table_metadata.get_cols_as_ref());
+            let columns_query = column_query_builder(table_metadata.get_cols_as_ref());
             let query_build = format!(
                 "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
                 columns_query,
-                table_key.1,
-                table_key.0,
+                table_key.1,//schema 
+                table_key.0,//table
                 pk_identifier
                     .get_pk_ref_opt()
                     .unwrap()
