@@ -89,6 +89,7 @@ fn query_builder(columns: &Vec<ColumnMembers>) -> String {
 pub async fn get_rows_from_tables(
     tables_metadata: &HashMap<(String, String), TableMetadata>,
     connection: &mut bb8::PooledConnection<'_, ConnectionManager>,
+    row_offset: i32,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut cannon_col: Vec<CanonnicalColumns> = Vec::new();
     for metadata in tables_metadata {
@@ -101,13 +102,13 @@ pub async fn get_rows_from_tables(
             table_metadata.get_total_rows_as_ref()
         );
         let table_rows = *table_metadata.get_total_rows_as_ref();
-        if table_rows < 10 {
+        if table_rows < row_offset {
             println!("on a row : {}", table_rows);
         }
-        let mut next: i32 = 10;
+        let mut next: i32 = row_offset;
         let mut prev = 0;
         while next <= table_rows {
-            next += 10;
+            next += row_offset;
             if next > table_rows {
                 let res = next - table_rows;
                 next = next - res;
