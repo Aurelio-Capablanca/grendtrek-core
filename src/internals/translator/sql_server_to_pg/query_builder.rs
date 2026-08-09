@@ -136,6 +136,11 @@ pub async fn get_rows_from_tables(
             );
             println!("{}", query_build);
 
+            let mut streams = connection.query("query", &[]).await?;
+            let cols = streams.columns().await?.unwrap();
+            let nexts = streams.try_next();
+            
+
             let rows_tables = connection
                 .query(query_build, &[])
                 .await
