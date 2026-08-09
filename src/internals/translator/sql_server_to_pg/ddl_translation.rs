@@ -97,6 +97,7 @@ fn build_columns(column: &ColumnMembers, types_conversion: &Vec<&TypeMapper>) ->
     if !column.get_collation().is_empty() {
         column_ddl.push_str("COLLATE ");
         column_ddl.push_str(column.get_collation());
+        column_ddl.push_str(" ");
     }
     if *column.get_is_nullable() {
         column_ddl.push_str("NULL");

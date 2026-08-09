@@ -17,9 +17,7 @@ use crate::internals::data_structures::database_metadata::{
     table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
 };
 
-fn rows_to_canonnical(
-    row: &Row,
-) -> Result<HashMap<String, Vec<GenericDatasetDBMS>>, Box<dyn std::error::Error>> {
+fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, Vec<GenericDatasetDBMS>>, Box<String>> {
     let mut data_columns: HashMap<String, Vec<GenericDatasetDBMS>> = HashMap::new();
     for (i, column) in row.columns().iter().enumerate() {
         let col_name = column.name();
@@ -59,8 +57,8 @@ fn rows_to_canonnical(
                 let unique_id: Uuid = row.get(i).unwrap();
                 GenericDataSQLServer::Text(Some(unique_id.to_string()))
             }
-            _ => GenericDataSQLServer::Text(Some("nd".to_string())),
-        };       
+            _ => return Err(Box::new(String::new())),
+        };
         let column_data = vec![GenericDatasetDBMS::SQLSERVER(value)];
         data_columns.insert(col_name.to_string(), column_data);
     }
@@ -128,7 +126,7 @@ pub async fn get_rows_from_tables(
                 "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
                 columns_query,
                 table_key.1,
-                table_key.0,                
+                table_key.0,
                 pk_identifier
                     .get_pk_ref_opt()
                     .unwrap()
@@ -136,7 +134,8 @@ pub async fn get_rows_from_tables(
                 prev, //Offset
                 next, // Next
             );
-            println!("{}",query_build);
+            println!("{}", query_build);
+
             let rows_tables = connection
                 .query(query_build, &[])
                 .await
@@ -152,6 +151,7 @@ pub async fn get_rows_from_tables(
                 ));
             }
             prev = next;
+            cannon_col.clear();
             if next == table_rows {
                 break;
             }
