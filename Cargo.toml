@@ -9,9 +9,10 @@ bb8-tiberius = "0.16.0"
 deadpool = { version = "0.13.0", features = ["rt_tokio_1"] }
 deadpool-postgres = "0.14.1"
 dotenvy = "0.15.7"
+futures-util = "0.3.33"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
-tiberius = { version = "0.12.3", features = ["rustls", "chrono", "tds73", "all"], default-features = false }
+tiberius = { version = "0.12.3", features = ["chrono", "futures-lite"] }
 tokio = { version = "1.49.0", features = ["full"] }
 tokio-postgres = "0.7.16"
 tokio-util = { version = "0.7.18", features = ["full"] }

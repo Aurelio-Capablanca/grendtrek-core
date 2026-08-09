@@ -1,11 +1,13 @@
 use std::{collections::HashMap, vec};
 
 use bb8_tiberius::ConnectionManager;
+use futures_util::TryStreamExt;
 use tiberius::{
     ColumnType::{self},
     Row, Uuid,
     numeric::Numeric,
     time::chrono::{NaiveDate, NaiveDateTime},
+    QueryItem,
 };
 
 use crate::internals::data_structures::database_metadata::{
@@ -136,24 +138,24 @@ pub async fn get_rows_from_tables(
             );
             println!("{}", query_build);
 
-            let mut streams = connection.query("query", &[]).await?;
-            let cols = streams.columns().await?.unwrap();
-            let nexts = streams.try_next();
-            
-
-            let rows_tables = connection
-                .query(query_build, &[])
-                .await
-                .unwrap()
-                .into_first_result()
-                .await
-                .unwrap();
-            for row in rows_tables.iter() {
-                let canonical_row = rows_to_canonnical(&row).unwrap();
-                cannon_col.push(CanonnicalColumns::new(
-                    table_key.0.to_string(),
-                    canonical_row,
-                ));
+            let mut streams = connection.query(query_build, &[]).await?;
+            while let Some(row) = streams.try_next().await? {
+                match row {
+                    QueryItem::Metadata(meta) => {
+                        println!(
+                            "Result set {} has {} columns",
+                            meta.result_index(),
+                            meta.columns().len()
+                        );
+                    }
+                    QueryItem::Row(row) => {
+                        let canonical_row = rows_to_canonnical(&row).unwrap();
+                        cannon_col.push(CanonnicalColumns::new(
+                            table_key.0.to_string(),
+                            canonical_row,
+                        ));
+                    }
+                }                
             }
             prev = next;
             cannon_col.clear();

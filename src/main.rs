@@ -216,7 +216,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // create default values ddl
     // get bulks (query in chunks all the db data)
     // insert bulks (batch insert it!)    
-    let offset: i32 = 100;
+    let offset: i32 = 1000;
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
     // fk ddl
