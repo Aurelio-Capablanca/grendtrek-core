@@ -4,19 +4,21 @@ use bb8_tiberius::ConnectionManager;
 use futures_util::TryStreamExt;
 use tiberius::{
     ColumnType::{self},
-    Row, Uuid,
+    QueryItem, Row, Uuid,
     numeric::Numeric,
     time::chrono::{NaiveDate, NaiveDateTime},
-    QueryItem,
 };
 
-use crate::internals::data_structures::database_metadata::{
-    constraint_metadata::{
-        IdentitySpecification,
-        SQLConstraints::{self, PRIMARYKEY},
+use crate::internals::{
+    data_structures::database_metadata::{
+        constraint_metadata::{
+            IdentitySpecification,
+            SQLConstraints::{self, PRIMARYKEY},
+        },
+        db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
+        table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
     },
-    db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
-    table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
+    utilities::file_writer::write_to_file_os,
 };
 
 fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, Vec<GenericDatasetDBMS>>, Box<String>> {
@@ -63,6 +65,7 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, Vec<GenericDatasetDBM
         };
         let column_data = vec![GenericDatasetDBMS::SQLSERVER(value)];
         data_columns.insert(col_name.to_string(), column_data);
+        println!("{:?}",data_columns)
     }
     Ok(data_columns)
 }
@@ -127,8 +130,8 @@ pub async fn get_rows_from_tables(
             let query_build = format!(
                 "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
                 columns_query,
-                table_key.1,//schema 
-                table_key.0,//table
+                table_key.1, //schema
+                table_key.0, //table
                 pk_identifier
                     .get_pk_ref_opt()
                     .unwrap()
@@ -136,8 +139,8 @@ pub async fn get_rows_from_tables(
                 prev, //Offset
                 next, // Next
             );
-            println!("{}", query_build);
-
+            let mut content_write = String::new();
+            content_write.push_str(&query_build);
             let mut streams = connection.query(query_build, &[]).await?;
             while let Some(row) = streams.try_next().await? {
                 match row {
@@ -154,8 +157,17 @@ pub async fn get_rows_from_tables(
                             table_key.0.to_string(),
                             canonical_row,
                         ));
+                        
+                        for cols in cannon_col.iter() {
+                            content_write.push_str(&cols.get_ref_data_to_str(table_key.0.to_string()));
+                        }
+                        write_to_file_os(
+                            content_write,
+                            "/data/Main/personal_projects/own/grendtrekk_writes_ddl/content.txt",
+                        );
+                        content_write = "".to_string();
                     }
-                }                
+                }
             }
             prev = next;
             cannon_col.clear();

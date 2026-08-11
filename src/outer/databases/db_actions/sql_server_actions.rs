@@ -323,8 +323,7 @@ async fn build_canonnical_checks(
         let column_name: String = check
             .get("column_name")
             .map(str::to_owned)
-            .unwrap_or_else(|| "".to_owned());
-        //let is_disabled: bool = if check.get::<u8 , _>("is_disabled").unwrap_or_else(|| 0).eq(&0) {false } else {true};
+            .unwrap_or_else(|| "".to_owned());       
         let is_disabled: bool = check.get::<bool, _>("is_disabled").unwrap_or_else(|| false);
         let is_not_trusted: bool = check.get::<bool, _>("not_trust").unwrap_or_else(|| false);
         let is_table_scoped: bool = column_name.eq("");
