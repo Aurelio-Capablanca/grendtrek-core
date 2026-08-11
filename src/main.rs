@@ -16,10 +16,8 @@ use crate::{
             database_metadata::db_metadata::cannonical_tables::TableMetadata,
             database_types::{collation::Collations, query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
-        },
-        translator::sql_server_to_pg::{ddl_translation, query_builder},
-    },
-    outer::databases::db_actions::pg_actions,
+        }, translator::sql_server_to_pg::{ddl_translation, query_builder}, utilities,
+    }, outer::databases::db_actions::pg_actions,
 };
 
 use crate::outer::databases::{
@@ -207,11 +205,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => {
             panic!("No connection ?")
         }
-    };
-
-    
-    
-
+    };    
     // create indexes (alter table) ddl
     // create default values ddl
     // get bulks (query in chunks all the db data)
@@ -222,34 +216,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // fk ddl
     // create check values
     // finish trekk
-    // mock save the results of the DDL reconstruction
-    let write = ddl_for_pg.join(" \n");
-    let file_exists =
-        std::fs::metadata("/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql");
-    let file_ddl = match file_exists {
-        Ok(_) => {
-            std::fs::File::create("/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql")
-        }
-        Err(_) => {
-            println!("File Already Exists, only writting at it");
-            std::fs::File::create_new(
-                "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql",
-            )
-        }
-    };
-    match file_ddl {
-        Ok(mut file) => match file.write_all(write.as_bytes()) {
-            Ok(_) => {
-                print!("OK")
-            }
-            Err(err) => {
-                println!("Error at placing data : {:?}", err)
-            }
-        },
-        Err(err) => {
-            println!("Error Writting file log DDL : {:?}", err)
-        }
-    }
+    //Generalize writing! 
+    let location : &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql";
+    let content = ddl_for_pg.join(" \n");
+    utilities::file_writer::write_to_file_os(content, location);
     // file writting for OS
     Ok(())
 }
