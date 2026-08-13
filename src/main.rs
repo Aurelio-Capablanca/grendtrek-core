@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
     env,
-    io::Write,
 };
 
 mod internals;
@@ -16,8 +15,11 @@ use crate::{
             database_metadata::db_metadata::cannonical_tables::TableMetadata,
             database_types::{collation::Collations, query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
-        }, translator::sql_server_to_pg::{ddl_translation, query_builder}, utilities,
-    }, outer::databases::db_actions::pg_actions,
+        },
+        translator::sql_server_to_pg::{ddl_translation, query_builder},
+        utilities,
+    },
+    outer::databases::db_actions::pg_actions,
 };
 
 use crate::outer::databases::{
@@ -205,19 +207,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         _ => {
             panic!("No connection ?")
         }
-    };    
+    };
     // create indexes (alter table) ddl
     // create default values ddl
     // get bulks (query in chunks all the db data)
-    // insert bulks (batch insert it!)    
+    // insert bulks (batch insert it!)
     let offset: i32 = 1000;
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
     // fk ddl
     // create check values
     // finish trekk
-    //Generalize writing! 
-    let location : &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql";
+    //Generalize writing!
+    let location: &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql";
     let content = ddl_for_pg.join(" \n");
     utilities::file_writer::write_to_file_os(content, location);
     // file writting for OS

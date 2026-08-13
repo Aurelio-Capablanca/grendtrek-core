@@ -65,7 +65,7 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, Vec<GenericDatasetDBM
         };
         let column_data = vec![GenericDatasetDBMS::SQLSERVER(value)];
         data_columns.insert(col_name.to_string(), column_data);
-        println!("{:?}",data_columns)
+        println!("{:?}", data_columns)
     }
     Ok(data_columns)
 }
@@ -152,14 +152,18 @@ pub async fn get_rows_from_tables(
                         );
                     }
                     QueryItem::Row(row) => {
-                        let canonical_row = rows_to_canonnical(&row).unwrap();
+                        let canonical_row: HashMap<String, Vec<GenericDatasetDBMS>> =
+                            rows_to_canonnical(&row).unwrap();
                         cannon_col.push(CanonnicalColumns::new(
                             table_key.0.to_string(),
                             canonical_row,
                         ));
-                        
+
                         for cols in cannon_col.iter() {
-                            content_write.push_str(&cols.get_ref_data_to_str(table_key.0.to_string()));
+                            let keys = cols.get_keys_ref();
+                            keys.iter().for_each(|data| {
+                                content_write.push_str(&cols.get_ref_data_to_str(data.to_string()));
+                            });
                         }
                         write_to_file_os(
                             content_write,
