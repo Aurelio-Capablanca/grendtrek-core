@@ -164,10 +164,11 @@ pub async fn get_rows_from_tables(
                             keys.iter().for_each(|data| {
                                 content_write.push_str(&cols.get_ref_data_to_str(data.to_string()));
                             });
-                        }
+                        }                    
+                        let file_name = format!("/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}.txt",table_key.0);                        
                         write_to_file_os(
                             content_write,
-                            "/data/Main/personal_projects/own/grendtrekk_writes_ddl/content.txt",
+                            &file_name.to_string(),
                         );
                         content_write = "".to_string();
                     }
