@@ -1,10 +1,7 @@
-use std::{collections::HashMap, fmt::format};
+use std::collections::HashMap;
 
-use tiberius::time::chrono::{NaiveDate, NaiveDateTime, Utc};
-
-use crate::internals::data_structures::database_metadata::table_data::{
-    GenericDataSQLServer::SmallInt, GenericDatasetDBMS::SQLSERVER,
-};
+use crate::internals::data_structures::database_metadata::table_data::GenericDatasetDBMS::SQLSERVER;
+use tiberius::time::chrono::{NaiveDate, NaiveDateTime};
 
 #[derive(Debug)]
 pub enum GenericDataSQLServer {
