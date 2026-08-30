@@ -95,6 +95,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         database_host: "localhost".to_string(),
         database_port: "1433".to_string(),
     };
+
     let handler_origin: DatabaseHandlers =
         generate_connections(mssql_connection, VendorOptions::MSSQL)
             .await
@@ -115,16 +116,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             _ => false,
         })
         .collect::<Vec<&Query>>();
+
     let mut canonnical_model: HashMap<(String, String), TableMetadata> =
         sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
 
-    // canonnical_model.iter().for_each(|data| {
-    //     let key = data.0;
-    //     let value = data.1;
-    //     println!("{:?} \n {:?}", key, value);
-    // });
-
-    // create schemas
+    //1.1 create schemas
     let schemas_cannonical: HashSet<String> = canonnical_model
         .iter()
         .map(|data| {
@@ -176,10 +172,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // --- DDL generation
     let ddl_for_pg: Vec<String> =
         match ddl_translation::translate_ddl(&mut canonnical_model, type_conversion) {
-            Ok(value) => {
-                //value.iter().for_each(|data| println!("{:?} \n", data));
-                value
-            }
+            Ok(value) => value,
             Err(err) => {
                 println!("{:?}", err);
                 Vec::new()
@@ -189,7 +182,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pg_con: &mut PgPoolHandler = match destiny {
         DatabaseHandlers::PostgresPool(pg_pool) => pg_pool,
         _ => {
-            panic!("No connection")
+            panic!("No connection ? at PG pool")
         }
     };
     let res_actions = pg_actions::create_tables(&ddl_for_pg, pg_con).await;
@@ -205,16 +198,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut connection = match origin {
         DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
         _ => {
-            panic!("No connection ?")
+            panic!("No connection ? at SQL Server pool")
         }
-    };
-    // create indexes (alter table) ddl
+    };    
     // create default values ddl
     // get bulks (query in chunks all the db data)
     // insert bulks (batch insert it!)
     let offset: i32 = 1000;
-    let result_types =
-        query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+    //let result_types = query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+    // 
+    // create indexes (alter table) ddl
     // fk ddl
     // create check values
     // finish trekk
