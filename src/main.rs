@@ -194,18 +194,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("Error at creating tables in destination : {}", err)
         }
     }
-    //do the Data migration
+       
+    // create default values ddl
+    // get bulks (query in chunks all the db data)
+    // insert bulks (batch insert it!)
+    
     let mut connection = match origin {
         DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
         _ => {
             panic!("No connection ? at SQL Server pool")
         }
-    };    
-    // create default values ddl
-    // get bulks (query in chunks all the db data)
-    // insert bulks (batch insert it!)
-    let offset: i32 = 1000;
-    //let result_types = query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+    };  
+       
+    let _offset: i32 = 1000;
+    /*
+     let result_types = query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+    */
+    
     // 
     // create indexes (alter table) ddl
     // fk ddl
