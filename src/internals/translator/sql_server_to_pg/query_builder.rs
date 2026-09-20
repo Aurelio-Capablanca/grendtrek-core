@@ -21,8 +21,8 @@ use crate::internals::{
     utilities::file_writer::write_to_file_os,
 };
 
-fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, Vec<GenericDatasetDBMS>>, Box<String>> {
-    let mut data_columns: HashMap<String, Vec<GenericDatasetDBMS>> = HashMap::new();
+fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, GenericDatasetDBMS>, Box<String>> {
+    let mut data_columns: HashMap<String, GenericDatasetDBMS> = HashMap::new();
     for (i, column) in row.columns().iter().enumerate() {
         let col_name = column.name();
         let col_type = column.column_type();
@@ -63,9 +63,9 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, Vec<GenericDatasetDBM
             }
             _ => return Err(Box::new(String::new())),
         };
-        let column_data = vec![GenericDatasetDBMS::SQLSERVER(value)];
-        data_columns.insert(col_name.to_string(), column_data);
-        println!("{:?}", data_columns)
+        //let column_data : Vec<GenericDatasetDBMS> = vec![];
+        data_columns.insert(col_name.to_string(), GenericDatasetDBMS::SQLSERVER(value));
+        //println!("{:?}", data_columns)
     }
     Ok(data_columns)
 }
@@ -152,7 +152,7 @@ pub async fn get_rows_from_tables(
                         );
                     }
                     QueryItem::Row(row) => {
-                        let canonical_row: HashMap<String, Vec<GenericDatasetDBMS>> =
+                        let canonical_row: HashMap<String, GenericDatasetDBMS> =
                             rows_to_canonnical(&row).unwrap();
                         cannon_col.push(CanonnicalColumns::new(
                             table_key.0.to_string(),
@@ -160,22 +160,31 @@ pub async fn get_rows_from_tables(
                         ));
 
                         for cols in cannon_col.iter() {
+                            let table_name = cols.get_table_ref();
+                            content_write.push_str("TABLE NAME : ");
+                            content_write.push_str(table_name);
+                            content_write.push_str("\n");
                             let keys = cols.get_keys_ref();
                             keys.iter().for_each(|data| {
-                                content_write.push_str(&cols.get_ref_data_to_str(data.to_string()));
+                                let middle = cols.get_ref_data_to_str(data.to_string());
+                                println!("{}", middle);                                
+                                content_write.push_str(data);
+                                content_write.push_str(" : ");
+                                content_write.push_str(&middle);
+                                content_write.push_str("\n");
                             });
-                        }                    
-                        let file_name = format!("/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}.txt",table_key.0);                        
-                        write_to_file_os(
-                            content_write,
-                            &file_name.to_string(),
+                        }
+                        let file_name = format!(
+                            "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}.txt",
+                            table_key.0
                         );
+                        write_to_file_os(content_write, &file_name.to_string());
                         content_write = "".to_string();
                     }
                 }
             }
             prev = next;
-            //do insertion of present batch! 
+            //do insertion of present batch!
             cannon_col.clear();
             if next == table_rows {
                 break;

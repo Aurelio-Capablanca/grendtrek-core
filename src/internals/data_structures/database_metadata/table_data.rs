@@ -18,29 +18,25 @@ pub enum GenericDataSQLServer {
 
 #[derive(Debug)]
 pub enum GenericDatasetDBMS {
-    PG,
+    //PG,
     SQLSERVER(GenericDataSQLServer),
 }
 
 #[derive(Debug)]
 pub struct CanonnicalColumns {
     table_name: String,
-    values: HashMap<String /*column_name*/, Vec<GenericDatasetDBMS>>, /*held value*///(String, Vec<GenericDatasetDBMS>)//
+    values: HashMap<String /*column_name*/, GenericDatasetDBMS>, /*held value*/
 }
 
 impl CanonnicalColumns {
-    pub fn new(table_name: String, cols: HashMap<String, Vec<GenericDatasetDBMS>>) -> Self {
+    pub fn new(table_name: String, cols: HashMap<String, GenericDatasetDBMS>) -> Self {
         Self {
             table_name,
             values: cols,
         }
     }
 
-    pub fn new_all_in(
-        table_name: String,
-        col_name: String,
-        value: Vec<GenericDatasetDBMS>,
-    ) -> Self {
+    pub fn new_all_in(table_name: String, col_name: String, value: GenericDatasetDBMS) -> Self {
         Self {
             table_name,
             values: HashMap::from([(col_name, value)]),
@@ -60,11 +56,11 @@ impl CanonnicalColumns {
             .collect::<Vec<&String>>()
     }
 
-    pub fn get_ref_cols(&self) -> &HashMap<String, Vec<GenericDatasetDBMS>> {
+    pub fn get_ref_cols(&self) -> &HashMap<String, GenericDatasetDBMS> {
         &self.values
     }
 
-    pub fn get_ref_data(&self, key: String) -> &Vec<GenericDatasetDBMS> {
+    pub fn get_ref_data(&self, key: String) -> &GenericDatasetDBMS {
         &self.values.get(&key).unwrap()
     }
 
@@ -76,57 +72,53 @@ impl CanonnicalColumns {
                 return "".to_string();
             }
         };
-        let output = content
-            .iter()
-            .map(|data| match data {
-                SQLSERVER(dataset) => match dataset {
-                    GenericDataSQLServer::Text(text) => {
-                        text.as_ref().unwrap_or(&String::new()).to_string()
-                    }
-                    GenericDataSQLServer::SmallInt(sint) => {
-                        let default_value = 0_i16;
-                        let value = sint.as_ref().unwrap_or(&default_value);
-                        format!("{:?}", value)
-                    }
-                    GenericDataSQLServer::Int(int) => {
-                        let default_value = 0_i32;
-                        let value = int.as_ref().unwrap_or(&default_value);
-                        format!("{:?}", value)
-                    }
-                    GenericDataSQLServer::Float(float) => {
-                        let default_value = 0_f64;
-                        let value = float.as_ref().unwrap_or(&default_value);
-                        format!("{:?}", value)
-                    }
-                    GenericDataSQLServer::Bool(boolean) => {
-                        format!("{:?}", boolean.unwrap_or(false))
-                    }
-                    GenericDataSQLServer::DateTimeLocal(dtlocal) => {
-                        let default_value: NaiveDateTime = NaiveDate::from_ymd_opt(2016, 7, 8)
-                            .unwrap()
-                            .and_hms_opt(9, 10, 11)
-                            .unwrap();
-                        format!("{:?}", dtlocal.unwrap_or(default_value))
-                    }
-                    GenericDataSQLServer::Date(datet) => {
-                        let default_value = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap();
-                        format!("{:?}", datet.unwrap_or(default_value))
-                    }
-                    GenericDataSQLServer::Bit(bit) => {
-                        format!("{:?}", bit.unwrap_or(0))
-                    }
-                    GenericDataSQLServer::BigBinary(bbin) => {
-                        let default_bbin = vec![0_u8];
-                        let value = bbin.as_ref().unwrap_or(&default_bbin);
-                        format!("{:?}", value)
-                    }
-                },
-                _ => {
-                    format!("malformed!")
+        let output = match content {
+            SQLSERVER(dataset) => match dataset {
+                GenericDataSQLServer::Text(text) => {
+                    text.as_ref().unwrap_or(&String::new()).to_string()
                 }
-            })
-            .collect::<Vec<String>>()
-            .join(", ");
+                GenericDataSQLServer::SmallInt(sint) => {
+                    let default_value = 0_i16;
+                    let value = sint.as_ref().unwrap_or(&default_value);
+                    format!("{:?}", value)
+                }
+                GenericDataSQLServer::Int(int) => {
+                    let default_value = 0_i32;
+                    let value = int.as_ref().unwrap_or(&default_value);
+                    format!("{:?}", value)
+                }
+                GenericDataSQLServer::Float(float) => {
+                    let default_value = 0_f64;
+                    let value = float.as_ref().unwrap_or(&default_value);
+                    format!("{:?}", value)
+                }
+                GenericDataSQLServer::Bool(boolean) => {
+                    format!("{:?}", boolean.unwrap_or(false))
+                }
+                GenericDataSQLServer::DateTimeLocal(dtlocal) => {
+                    let default_value: NaiveDateTime = NaiveDate::from_ymd_opt(2016, 7, 8)
+                        .unwrap()
+                        .and_hms_opt(9, 10, 11)
+                        .unwrap();
+                    format!("{:?}", dtlocal.unwrap_or(default_value))
+                }
+                GenericDataSQLServer::Date(datet) => {
+                    let default_value = NaiveDate::from_ymd_opt(2016, 7, 8).unwrap();
+                    format!("{:?}", datet.unwrap_or(default_value))
+                }
+                GenericDataSQLServer::Bit(bit) => {
+                    format!("{:?}", bit.unwrap_or(0))
+                }
+                GenericDataSQLServer::BigBinary(bbin) => {
+                    let default_bbin = vec![0_u8];
+                    let value = bbin.as_ref().unwrap_or(&default_bbin);
+                    format!("{:?}", value)
+                }
+            },
+            _ => {
+                format!("malformed!")
+            }
+        };
         output
     }
 }
