@@ -117,6 +117,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .collect::<Vec<&Query>>();
 
+    //get canonnical model (origin)
     let mut canonnical_model: HashMap<(String, String), TableMetadata> =
         sql_server_actions::build_canonnical_schema(origin, sqlserver_cannon).await?;
 
@@ -157,8 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let unbox = err.as_ref().to_string();
             eprintln!("Error at issue Collations : {}", unbox);
         }
-    }
-    // 2.0  issue ddl pk with tables
+    }    
     //  --- type translation
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                     VendorOptions::MSSQL => true,
@@ -169,7 +169,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     _=> false,
                 }
                 ).collect::<Vec<&TypeMapper>>();
-    // --- DDL generation
+    //DDL generation
     let ddl_for_pg: Vec<String> =
         match ddl_translation::translate_ddl(&mut canonnical_model, type_conversion) {
             Ok(value) => value,
@@ -178,6 +178,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Vec::new()
             }
         };
+    
+    //Write DDL Generated
+    let location: &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql";
+    let content = ddl_for_pg.join(" \n");
+    utilities::file_writer::write_to_file_os(content, location);
+    
     //create Tables
     let pg_con: &mut PgPoolHandler = match destiny {
         DatabaseHandlers::PostgresPool(pg_pool) => pg_pool,
@@ -195,10 +201,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // create default values ddl
-    // get bulks (query in chunks all the db data)
     // insert bulks (batch insert it!)
-
     let mut connection = match origin {
         DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
         _ => {
@@ -210,15 +213,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
 
-    //
-    // create indexes (alter table) ddl
-    // fk ddl
-    // create check values
-    // finish trekk
-    // Generalize writing!
-    let location: &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql";
-    let content = ddl_for_pg.join(" \n");
-    utilities::file_writer::write_to_file_os(content, location);
-    // file writting for OS
+    
+    
     Ok(())
 }

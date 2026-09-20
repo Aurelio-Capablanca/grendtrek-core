@@ -1,4 +1,4 @@
-use std::{collections::HashMap, vec};
+use std::collections::HashMap;
 
 use bb8_tiberius::ConnectionManager;
 use futures_util::TryStreamExt;
@@ -62,10 +62,8 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, GenericDatasetDBMS>, 
                 GenericDataSQLServer::Text(Some(unique_id.to_string()))
             }
             _ => return Err(Box::new(String::new())),
-        };
-        //let column_data : Vec<GenericDatasetDBMS> = vec![];
-        data_columns.insert(col_name.to_string(), GenericDatasetDBMS::SQLSERVER(value));
-        //println!("{:?}", data_columns)
+        };        
+        data_columns.insert(col_name.to_string(), GenericDatasetDBMS::SQLSERVER(value));        
     }
     Ok(data_columns)
 }
@@ -88,6 +86,16 @@ fn column_query_builder(columns: &Vec<ColumnMembers>) -> String {
         .collect::<Vec<String>>()
         .join(" , ")
 }
+
+
+fn query_build_insertions(columns : &CanonnicalColumns) -> String {
+    let mut batch = String::new();
+    batch.push_str("INSERT INTO ");
+    batch.push_str(columns.get_table_ref());
+    
+    batch
+}
+
 
 pub async fn get_rows_from_tables(
     tables_metadata: &HashMap<(String, String), TableMetadata>,
@@ -157,8 +165,8 @@ pub async fn get_rows_from_tables(
                         cannon_col.push(CanonnicalColumns::new(
                             table_key.0.to_string(),
                             canonical_row,
-                        ));
-
+                        ));                        
+                        //File Write
                         for cols in cannon_col.iter() {
                             let table_name = cols.get_table_ref();
                             content_write.push_str("TABLE NAME : ");
@@ -181,10 +189,11 @@ pub async fn get_rows_from_tables(
                         write_to_file_os(content_write, &file_name.to_string());
                         content_write = "".to_string();
                     }
+                    //PG_DB insertion
+                    
                 }
             }
-            prev = next;
-            //do insertion of present batch!
+            prev = next;            
             cannon_col.clear();
             if next == table_rows {
                 break;

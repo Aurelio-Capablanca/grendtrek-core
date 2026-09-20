@@ -82,3 +82,10 @@ Example: en-US-u-kn-true-ks-level2
 en-US —> the base language tag (BCP 47): language + optional region/script
 -u- —> introduces Unicode Consortium-specific options
 kn-true, ks-level2, etc. —> the "keyword" options tacked on after -u-
+
+----------------------
+Insertions
+
+INSERT INTO films VALUES ('UA502', 'Bananas', 105, '1971-07-13', 'Comedy', '82 minutes');
+
+
