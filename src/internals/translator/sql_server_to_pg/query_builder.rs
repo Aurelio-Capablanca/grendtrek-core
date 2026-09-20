@@ -175,6 +175,7 @@ pub async fn get_rows_from_tables(
                 }
             }
             prev = next;
+            //do insertion of present batch! 
             cannon_col.clear();
             if next == table_rows {
                 break;

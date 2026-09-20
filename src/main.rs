@@ -194,29 +194,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("Error at creating tables in destination : {}", err)
         }
     }
-       
+
     // create default values ddl
     // get bulks (query in chunks all the db data)
     // insert bulks (batch insert it!)
-    
+
     let mut connection = match origin {
         DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
         _ => {
             panic!("No connection ? at SQL Server pool")
         }
-    };  
-       
-    let _offset: i32 = 1000;
-    /*
-     let result_types = query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
-    */
-    
-    // 
+    };
+
+    let offset: i32 = 1000;
+    let result_types =
+        query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+
+    //
     // create indexes (alter table) ddl
     // fk ddl
     // create check values
     // finish trekk
-    //Generalize writing!
+    // Generalize writing!
     let location: &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql";
     let content = ddl_for_pg.join(" \n");
     utilities::file_writer::write_to_file_os(content, location);
