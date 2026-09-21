@@ -5,14 +5,18 @@ use tiberius::time::chrono::{self, NaiveDate, NaiveDateTime, Utc};
 
 #[derive(Debug)]
 pub enum GenericDataSQLServer {
+    // Varchar|Varchar2 
     Text(Option<String>),
+    // numerics
     SmallInt(Option<i16>),
     Int(Option<i32>),
     Float(Option<f64>),
     Bool(Option<bool>),
     Bit(Option<u8>),
+    // dates
     DateTimeLocal(Option<NaiveDateTime>),
     Date(Option<NaiveDate>),
+    // binary arrays
     BigBinary(Option<Vec<u8>>),
 }
 
@@ -56,12 +60,31 @@ impl CanonnicalColumns {
             .collect::<Vec<&String>>()
     }
 
+    pub fn get_keys_len(&self) -> usize {
+        let values = &self.values;
+        values.keys().len()
+    }
+
+    pub fn get_keys_as_joined_cols(&self) -> String {
+        let values = &self.values;
+        values
+            .keys()
+            .into_iter()
+            .map(|data| data.clone())
+            .collect::<Vec<String>>()
+            .join(",")
+    }
+
     pub fn get_ref_cols(&self) -> &HashMap<String, GenericDatasetDBMS> {
         &self.values
     }
 
     pub fn get_ref_data(&self, key: String) -> &GenericDatasetDBMS {
         &self.values.get(&key).unwrap()
+    }
+
+    pub fn get_data_ref(&self) -> &HashMap<String, GenericDatasetDBMS> {
+        &self.values
     }
 
     pub fn get_ref_data_to_str(&self, key: String) -> String {
@@ -99,7 +122,7 @@ impl CanonnicalColumns {
                     let default_value: NaiveDateTime = NaiveDate::from_ymd_opt(2016, 7, 8)
                         .unwrap()
                         .and_hms_opt(9, 10, 11)
-                        .unwrap();                
+                        .unwrap();
                     format!("{:?}", dtlocal.unwrap_or(default_value))
                 }
                 GenericDataSQLServer::Date(datet) => {

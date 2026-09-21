@@ -159,7 +159,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("Error at issue Collations : {}", unbox);
         }
     }    
-    //  --- type translation
+    //  --- type translation (for DDL pass)
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                     VendorOptions::MSSQL => true,
                     _=> false
@@ -201,19 +201,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    // insert bulks (batch insert it!)
+    // insert bulks
     let mut connection = match origin {
         DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
         _ => {
             panic!("No connection ? at SQL Server pool")
         }
     };
-
     let offset: i32 = 1000;
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
-
-    
     
     Ok(())
 }

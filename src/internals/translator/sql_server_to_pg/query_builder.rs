@@ -62,8 +62,8 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, GenericDatasetDBMS>, 
                 GenericDataSQLServer::Text(Some(unique_id.to_string()))
             }
             _ => return Err(Box::new(String::new())),
-        };        
-        data_columns.insert(col_name.to_string(), GenericDatasetDBMS::SQLSERVER(value));        
+        };
+        data_columns.insert(col_name.to_string(), GenericDatasetDBMS::SQLSERVER(value));
     }
     Ok(data_columns)
 }
@@ -87,15 +87,27 @@ fn column_query_builder(columns: &Vec<ColumnMembers>) -> String {
         .join(" , ")
 }
 
-
-fn query_build_insertions(columns : &CanonnicalColumns) -> String {
+fn query_build_insertions(columns: &CanonnicalColumns) -> String {
     let mut batch = String::new();
     batch.push_str("INSERT INTO ");
     batch.push_str(columns.get_table_ref());
+    batch.push_str(" (");
+    let cols: String = columns.get_keys_as_joined_cols();
+    batch.push_str(&cols);
+    batch.push_str(") VALUES (");
+    for (key, val) in columns.get_data_ref(){
+        //mark data for it's type ('' for Strings and Dates)
+        let value_insert = match val {
+            GenericDatasetDBMS::SQLSERVER(values) => match values {
+                GenericDataSQLServer::Text(text) => format!("'{:?}'",text),
+                _=> "".to_string()                
+            },
+            _=> "".to_string()
+        };
+    }
     
     batch
 }
-
 
 pub async fn get_rows_from_tables(
     tables_metadata: &HashMap<(String, String), TableMetadata>,
@@ -165,7 +177,7 @@ pub async fn get_rows_from_tables(
                         cannon_col.push(CanonnicalColumns::new(
                             table_key.0.to_string(),
                             canonical_row,
-                        ));                        
+                        ));
                         //File Write
                         for cols in cannon_col.iter() {
                             let table_name = cols.get_table_ref();
@@ -175,7 +187,7 @@ pub async fn get_rows_from_tables(
                             let keys = cols.get_keys_ref();
                             keys.iter().for_each(|data| {
                                 let middle = cols.get_ref_data_to_str(data.to_string());
-                                println!("{}", middle);                                
+                                println!("{}", middle);
                                 content_write.push_str(data);
                                 content_write.push_str(" : ");
                                 content_write.push_str(&middle);
@@ -188,12 +200,10 @@ pub async fn get_rows_from_tables(
                         );
                         write_to_file_os(content_write, &file_name.to_string());
                         content_write = "".to_string();
-                    }
-                    //PG_DB insertion
-                    
+                    } //PG_DB insertion
                 }
             }
-            prev = next;            
+            prev = next;
             cannon_col.clear();
             if next == table_rows {
                 break;
