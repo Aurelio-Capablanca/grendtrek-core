@@ -99,13 +99,15 @@ fn query_build_insertions(columns: &CanonnicalColumns) -> String {
         //mark data for it's type ('' for Strings and Dates)
         let value_insert = match val {
             GenericDatasetDBMS::SQLSERVER(values) => match values {
-                GenericDataSQLServer::Text(text) => format!("'{:?}'",text),
+                GenericDataSQLServer::Text(text)  => format!("'{}'",text.as_ref().unwrap()),
+                GenericDataSQLServer::Date(date) => format!("'{}'",date.as_ref().unwrap()),
+                
                 _=> "".to_string()                
             },
             _=> "".to_string()
         };
-    }
-    
+        batch.push_str(&value_insert);
+    }    
     batch
 }
 
