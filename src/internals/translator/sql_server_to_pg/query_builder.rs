@@ -107,7 +107,7 @@ fn query_build_insertions(columns: &CanonnicalColumns) -> String {
                 //times
                 GenericDataSQLServer::Date(date) => format!("'{}'", date.as_ref().unwrap()),
                 GenericDataSQLServer::DateTimeLocal(datelocal) => {
-                    format!("'{}'", datelocal.as_ref().unwrap())
+                    format!("'{}'", datelocal.as_ref().unwrap())//issue on non-protected unwrap
                 }
                 //binaries
                 GenericDataSQLServer::BigBinary(binary) => {
