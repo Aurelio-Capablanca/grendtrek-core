@@ -95,19 +95,51 @@ fn query_build_insertions(columns: &CanonnicalColumns) -> String {
     let cols: String = columns.get_keys_as_joined_cols();
     batch.push_str(&cols);
     batch.push_str(") VALUES (");
-    for (key, val) in columns.get_data_ref(){
+    let list_size: usize = columns.get_data_ref().len();
+    for (i, (_, val)) in columns.get_data_ref().iter().enumerate() {
+        batch.push_str(" ");
         //mark data for it's type ('' for Strings and Dates)
         let value_insert = match val {
             GenericDatasetDBMS::SQLSERVER(values) => match values {
-                GenericDataSQLServer::Text(text)  => format!("'{}'",text.as_ref().unwrap()),
-                GenericDataSQLServer::Date(date) => format!("'{}'",date.as_ref().unwrap()),
-                
-                _=> "".to_string()                
+                GenericDataSQLServer::Text(text) => {
+                    format!("'{}'", text.as_ref().unwrap_or(&String::new()))
+                }
+                //times
+                GenericDataSQLServer::Date(date) => format!("'{}'", date.as_ref().unwrap()),
+                GenericDataSQLServer::DateTimeLocal(datelocal) => {
+                    format!("'{}'", datelocal.as_ref().unwrap())
+                }
+                //binaries
+                GenericDataSQLServer::BigBinary(binary) => {
+                    format!("'{:?}'", binary.as_ref().unwrap())
+                }
+                GenericDataSQLServer::Bit(bits) => {
+                    format!("'{}'", bits.as_ref().unwrap())
+                }
+                //numerics
+                GenericDataSQLServer::Int(ints) => {
+                    format!("{}", ints.as_ref().unwrap())
+                }
+                GenericDataSQLServer::SmallInt(sint) => {
+                    format!("{}", sint.as_ref().unwrap())
+                }
+                GenericDataSQLServer::Float(floats) => {
+                    format!("{}", floats.as_ref().unwrap())
+                }
+                GenericDataSQLServer::Bool(boolean) => {
+                    format!("{}", boolean.as_ref().unwrap())
+                }
+                _ => "".to_string(),
             },
-            _=> "".to_string()
+            _ => "".to_string(),
         };
         batch.push_str(&value_insert);
-    }    
+        if list_size - 1 == i {
+            batch.push_str(");");
+        } else {
+            batch.push_str(", ");
+        }
+    }
     batch
 }
 
@@ -121,15 +153,7 @@ pub async fn get_rows_from_tables(
         let empty_otherwise = &SQLConstraints::PRIMARYKEY(IdentitySpecification::empty_struct());
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
-        println!(
-            "total Rows in {}  is {}",
-            table_metadata.get_table_name(),
-            table_metadata.get_total_rows_as_ref()
-        );
         let table_rows = *table_metadata.get_total_rows_as_ref();
-        if table_rows < row_offset {
-            println!("on a row : {}", table_rows);
-        }
         let mut next: i32 = row_offset;
         let mut prev = 0;
         while next <= table_rows {
@@ -138,7 +162,6 @@ pub async fn get_rows_from_tables(
                 let res = next - table_rows;
                 next = next - res;
             }
-            println!("Current {} | Prev {}", next, prev);
             //Do the query!
             let pk_identifier = table_metadata
                 .get_constrs_as_ref()
@@ -163,6 +186,7 @@ pub async fn get_rows_from_tables(
             );
             let mut content_write = String::new();
             content_write.push_str(&query_build);
+            //Execute Query!
             let mut streams = connection.query(query_build, &[]).await?;
             while let Some(row) = streams.try_next().await? {
                 match row {
@@ -176,35 +200,26 @@ pub async fn get_rows_from_tables(
                     QueryItem::Row(row) => {
                         let canonical_row: HashMap<String, GenericDatasetDBMS> =
                             rows_to_canonnical(&row).unwrap();
-                        cannon_col.push(CanonnicalColumns::new(
-                            table_key.0.to_string(),
-                            canonical_row,
-                        ));
-                        //File Write
-                        for cols in cannon_col.iter() {
-                            let table_name = cols.get_table_ref();
-                            content_write.push_str("TABLE NAME : ");
-                            content_write.push_str(table_name);
-                            content_write.push_str("\n");
-                            let keys = cols.get_keys_ref();
-                            keys.iter().for_each(|data| {
-                                let middle = cols.get_ref_data_to_str(data.to_string());
-                                println!("{}", middle);
-                                content_write.push_str(data);
-                                content_write.push_str(" : ");
-                                content_write.push_str(&middle);
-                                content_write.push_str("\n");
-                            });
-                        }
-                        let file_name = format!(
-                            "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}.txt",
-                            table_key.0
-                        );
-                        write_to_file_os(content_write, &file_name.to_string());
-                        content_write = "".to_string();
-                    } //PG_DB insertion
+                        let canonical =
+                            CanonnicalColumns::new(table_key.0.to_string(), canonical_row);
+                        cannon_col.push(canonical);
+                    }
                 }
             }
+            for cols in cannon_col.iter() {
+                //PG_DB insertion
+                let batch = query_build_insertions(cols);
+                // println!("{} ", batch);
+                content_write.push_str(&format!("\n{}", &batch));
+            }
+            let file_name = format!(
+                "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}.txt",
+                table_key.0
+            );
+            println!("schema : {} | table : {}", table_key.0, table_key.1);
+            write_to_file_os(content_write, &file_name.to_string());
+            //clear actions
+            content_write = "".to_string();
             prev = next;
             cannon_col.clear();
             if next == table_rows {

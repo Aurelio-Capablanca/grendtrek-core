@@ -15,7 +15,7 @@ pub fn write_to_file_os(content: String, file_path: &str) {
         Ok(mut file) => {
             match  file.write_all(content.as_bytes()) {
                 Ok(_) => {
-                    println!("Success to write!")
+                    //println!("Success to write!")
                 },
                 Err(err) => {
                     println!("Error ar writting to location : {:?}",err)
