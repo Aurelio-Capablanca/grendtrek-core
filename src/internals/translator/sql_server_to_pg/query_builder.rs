@@ -102,32 +102,71 @@ fn query_build_insertions(columns: &CanonnicalColumns) -> String {
         let value_insert = match val {
             GenericDatasetDBMS::SQLSERVER(values) => match values {
                 GenericDataSQLServer::Text(text) => {
-                    format!("'{}'", text.as_ref().unwrap_or(&String::new()))
+                    //format!("'{}'", text.as_ref().unwrap_or(&String::new()))
+                    if text.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("'{}'", text.as_ref().unwrap())
+                    }
                 }
                 //times
-                GenericDataSQLServer::Date(date) => format!("'{}'", date.as_ref().unwrap()),
+                GenericDataSQLServer::Date(date) => {
+                    if date.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("'{}'", date.as_ref().unwrap())
+                    }
+                },
                 GenericDataSQLServer::DateTimeLocal(datelocal) => {
-                    format!("'{}'", datelocal.as_ref().unwrap())//issue on non-protected unwrap
+                    if datelocal.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("'{}'", datelocal.as_ref().unwrap())
+                    }                   
                 }
                 //binaries
                 GenericDataSQLServer::BigBinary(binary) => {
-                    format!("'{:?}'", binary.as_ref().unwrap())
+                    if binary.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("'{:?}'", binary.as_ref().unwrap())
+                    }
                 }
                 GenericDataSQLServer::Bit(bits) => {
-                    format!("'{}'", bits.as_ref().unwrap())
+                    if bits.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("'{}'", bits.as_ref().unwrap())
+                    }
                 }
                 //numerics
                 GenericDataSQLServer::Int(ints) => {
-                    format!("{}", ints.as_ref().unwrap())
+                    if ints.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("{}", ints.as_ref().unwrap())
+                    }
                 }
                 GenericDataSQLServer::SmallInt(sint) => {
-                    format!("{}", sint.as_ref().unwrap())
+                    if sint.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("{}", sint.as_ref().unwrap())
+                    }
                 }
                 GenericDataSQLServer::Float(floats) => {
-                    format!("{}", floats.as_ref().unwrap())
+                    if floats.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("{}", floats.as_ref().unwrap())
+                    }
                 }
                 GenericDataSQLServer::Bool(boolean) => {
-                    format!("{}", boolean.as_ref().unwrap())
+                    if boolean.as_ref().is_none() {
+                        "NULL".to_string()
+                    } else {
+                        format!("{}", boolean.as_ref().unwrap())
+                    }
                 }
                 _ => "".to_string(),
             },
@@ -207,9 +246,7 @@ pub async fn get_rows_from_tables(
                 }
             }
             for cols in cannon_col.iter() {
-                //PG_DB insertion
                 let batch = query_build_insertions(cols);
-                // println!("{} ", batch);
                 content_write.push_str(&format!("\n{}", &batch));
             }
             let file_name = format!(
