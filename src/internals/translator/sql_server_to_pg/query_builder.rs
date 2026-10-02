@@ -68,25 +68,6 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, GenericDatasetDBMS>, 
     Ok(data_columns)
 }
 
-fn column_query_builder(columns: &Vec<ColumnMembers>) -> String {
-    columns
-        .iter()
-        .map(|col| {
-            let col_name = col.get_column_name();
-            if col.get_data_type().eq_ignore_ascii_case("hierarchyid") {
-                format!("CAST([{}] as VARCHAR) as [{}]", col_name, col_name)
-            } else if col.get_data_type().eq_ignore_ascii_case("xml")
-                || col.get_data_type().eq_ignore_ascii_case("geography")
-            {
-                format!("CAST([{}] as NVARCHAR(max)) as [{}]", col_name, col_name)
-            } else {
-                format!("[{}]", col_name)
-            }
-        })
-        .collect::<Vec<String>>()
-        .join(" , ")
-}
-
 fn query_build_insertions(columns: &CanonnicalColumns) -> String {
     let mut batch = String::new();
     batch.push_str("INSERT INTO ");
@@ -116,13 +97,13 @@ fn query_build_insertions(columns: &CanonnicalColumns) -> String {
                     } else {
                         format!("'{}'", date.as_ref().unwrap())
                     }
-                },
+                }
                 GenericDataSQLServer::DateTimeLocal(datelocal) => {
                     if datelocal.as_ref().is_none() {
                         "NULL".to_string()
                     } else {
                         format!("'{}'", datelocal.as_ref().unwrap())
-                    }                   
+                    }
                 }
                 //binaries
                 GenericDataSQLServer::BigBinary(binary) => {
@@ -182,6 +163,25 @@ fn query_build_insertions(columns: &CanonnicalColumns) -> String {
     batch
 }
 
+fn column_query_builder(columns: &Vec<ColumnMembers>) -> String {
+    columns
+        .iter()
+        .map(|col| {
+            let col_name = col.get_column_name();
+            if col.get_data_type().eq_ignore_ascii_case("hierarchyid") {
+                format!("CAST([{}] as VARCHAR) as [{}]", col_name, col_name)
+            } else if col.get_data_type().eq_ignore_ascii_case("xml")
+                || col.get_data_type().eq_ignore_ascii_case("geography")
+            {
+                format!("CAST([{}] as NVARCHAR(max)) as [{}]", col_name, col_name)
+            } else {
+                format!("[{}]", col_name)
+            }
+        })
+        .collect::<Vec<String>>()
+        .join(" , ")
+}
+
 pub async fn get_rows_from_tables(
     tables_metadata: &HashMap<(String, String), TableMetadata>,
     connection: &mut bb8::PooledConnection<'_, ConnectionManager>,
@@ -201,8 +201,7 @@ pub async fn get_rows_from_tables(
                 let res = next - table_rows;
                 next = next - res;
             }
-            //Do the query!
-            let pk_identifier = table_metadata
+            let pk_identifier = table_metadata // remove loop
                 .get_constrs_as_ref()
                 .iter()
                 .find(|pred| match pred {
@@ -210,6 +209,7 @@ pub async fn get_rows_from_tables(
                     _ => false,
                 })
                 .unwrap_or(empty_otherwise);
+            //Do the query!
             let columns_query = column_query_builder(table_metadata.get_cols_as_ref());
             let query_build = format!(
                 "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
