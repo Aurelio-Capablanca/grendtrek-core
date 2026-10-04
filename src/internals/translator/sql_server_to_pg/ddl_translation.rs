@@ -15,9 +15,8 @@ use crate::internals::data_structures::{
     },
 };
 
-static SQL_RESERVED: LazyLock<Vec<&str>> = LazyLock::new(|| {    
-    Vec::from(["Group", "System", "Primary", "Cursor"])
-});
+static SQL_RESERVED: LazyLock<Vec<&str>> =
+    LazyLock::new(|| Vec::from(["Group", "System", "Primary", "Cursor"]));
 
 fn postgre_sql_format(original: &str) -> String {
     let middlepoint = if original
@@ -31,7 +30,7 @@ fn postgre_sql_format(original: &str) -> String {
             .collect::<Vec<char>>()
     } else {
         original.chars().collect::<Vec<char>>()
-    };    
+    };
     let mut fix = String::new();
     let mut next = ' ';
     for (i, chars) in middlepoint.iter().enumerate() {
@@ -137,7 +136,7 @@ pub fn build_collation_mod(collations_coll: &Vec<Collations>) -> Option<Vec<Stri
                 }
                 collations_ddl.push(collation_ddl);
             }
-            _ => {} 
+            _ => {}
         }
     }
     Some(collations_ddl)
@@ -189,23 +188,13 @@ fn build_pks(
     pk_ddl
 }
 
-fn build_pk_mult(pks: &Vec<SQLConstraints>, constraint_name: &str) -> String {
+fn build_pk_mult(pks: &Vec<IdentitySpecification>, constraint_name: &str) -> String {
     let mut pk_ddl = String::new();
     pk_ddl.push_str(" CONSTRAINT ");
     let pg_constraint_ren = postgre_sql_format(constraint_name);
     pk_ddl.push_str(&pg_constraint_ren);
     pk_ddl.push_str(" PRIMARY KEY (");
-    let pk_col_names = pks
-        .iter()
-        .filter(|pred| match pred {
-            SQLConstraints::PRIMARYKEY(_) => true,
-            _ => false,
-        })
-        .map(|data| {
-            let prev_name = data.get_pk_ref_opt().unwrap().get_col_name_as_ref();
-            let pg_name = postgre_sql_format(prev_name);
-            pg_name
-        })
+    let pk_col_names = pks.iter().map(|data| postgre_sql_format(data.get_col_name_as_ref()))
         .collect::<Vec<String>>()
         .join(", ");
     pk_ddl.push_str(&pk_col_names);
@@ -223,14 +212,8 @@ pub fn translate_ddl(
         let table_keys: &(String, String) = struct_table.0;
         let table_metadata: &TableMetadata = struct_table.1;
         let columns = table_metadata.get_cols_as_ref();
-        let constraints = table_metadata.get_constrs_as_ref();
-        let num_pks: usize = constraints
-            .into_iter()
-            .filter(|pred| match pred {
-                SQLConstraints::PRIMARYKEY(_) => true,
-                _ => false,
-            })
-            .count();
+        let pk_fields = table_metadata.get_pk_as_ref();
+        let num_pks: usize = pk_fields.len();
         ddl_generation.push_str("create table ");
         ddl_generation.push_str(&table_keys.1);
         ddl_generation.push_str(".");
@@ -239,19 +222,13 @@ pub fn translate_ddl(
         let field_spec: String = columns
             .iter()
             .map(|column| {
-                if let Some(p_key) = constraints.iter().find(|pred| match pred {
-                    SQLConstraints::PRIMARYKEY(pk) => {
-                        pk.get_col_name_as_ref().eq(column.get_column_name())
-                    }
-                    _ => false,
-                }) && num_pks == 1
+                if let Some(p_key) = pk_fields
+                    .iter()
+                    .find(|pk| pk.get_col_name_as_ref().eq(column.get_column_name()))
+                    && num_pks == 1
                 {
                     //PK column
-                    if let Some(key) = p_key.get_pk_ref_opt() {
-                        build_pks(column, key, &types_conversion)
-                    } else {
-                        "".to_string()
-                    }
+                    build_pks(column, p_key, &types_conversion)
                 } else {
                     // regular column!
                     match build_columns(column, &types_conversion) {
@@ -264,20 +241,9 @@ pub fn translate_ddl(
             .join(",");
         ddl_generation.push_str(&field_spec);
         if num_pks > 1 {
-            ddl_generation.push_str(", ");
-            let constraint_name = constraints
-                .iter()
-                .filter(|pred| match pred {
-                    SQLConstraints::PRIMARYKEY(_) => true,
-                    _ => false,
-                })
-                .collect::<Vec<&SQLConstraints>>()
-                .get(0)
-                .unwrap()
-                .get_pk_ref_opt()
-                .unwrap()
-                .get_pk_name_as_ref();
-            ddl_generation.push_str(&build_pk_mult(constraints, constraint_name));
+            ddl_generation.push_str(", ");           
+            let constraint_name = pk_fields.get(0).unwrap().get_pk_name_as_ref();
+            ddl_generation.push_str(&build_pk_mult(pk_fields, constraint_name));
         }
         ddl_generation.push_str(");");
         ddl_content.push(ddl_generation);

@@ -119,6 +119,8 @@ async fn build_cannonical_columns(
                     table_name.to_owned(),
                     schema_name,
                     vec![column_memb.to_owned()],
+                    Vec::new(),
+                    Vec::new(),
                     computed_expression,
                     Vec::new(),
                     total_rows,
@@ -175,10 +177,7 @@ async fn build_canonnical_pk(
             Some(last_value),
             Some(increment),
         );
-        tables.entry(keys).and_modify(|pred| {
-            //modify the PK's
-            pred.add_pk(incrementals);
-        });
+        tables.entry(keys).and_modify(|pred| pred.add_pk(incrementals));
     }
 }
 
@@ -241,9 +240,7 @@ async fn build_canonnical_fk(
             del_ref_action,
             upd_ref_action,
         );
-        tables.entry(keys).and_modify(|lambda| {
-            lambda.add_fks(foreign_key);
-        });
+        tables.entry(keys).and_modify(|lambda| lambda.add_fks(foreign_key));
     }
 }
 

@@ -209,8 +209,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     let offset: i32 = 1000;
-    let result_types =
-        query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+    
+    //Write all memory for check current Canonical model
+    let location_cannon: &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/canonnical_model.txt";
+    let content = canonnical_model
+        .into_iter()
+        .map(|data| {            
+            let table = data.0.0;
+            let schema = data.0.1;
+            let metadata = data.1;
+            let formatter = format!("Table : {} Schema : {} | Content : {:?}",table,schema,metadata);
+            formatter
+        })
+        .collect::<Vec<String>>()
+        .join(" \n");
+    
+    utilities::file_writer::write_to_file_os(content, location_cannon);
+    // let result_types =
+    //     query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
     
     Ok(())
 }

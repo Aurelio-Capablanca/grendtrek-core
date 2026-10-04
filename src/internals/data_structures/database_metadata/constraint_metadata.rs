@@ -1,28 +1,11 @@
-
 #[derive(Debug)]
 pub enum SQLConstraints {
-    PRIMARYKEY(IdentitySpecification),
-    FOREIGNKEY(ForeignKeys),
     CHECK(ComputedSpecification),
     DEFAULT(ComputedSpecification),
     COMPUTED(ComputedSpecification),
 }
 
 impl SQLConstraints {
-    pub fn get_pk_ref_opt(&self) -> Option<&IdentitySpecification> {
-        match self {
-            SQLConstraints::PRIMARYKEY(pk) => Some(pk),
-            _ => None,
-        }
-    }
-
-    pub fn get_fk_ref_opt(&self) -> Option<&ForeignKeys> {
-        match self {
-            SQLConstraints::FOREIGNKEY(fk) => Some(fk),
-            _ => None,
-        }
-    }
-
     pub fn get_chk_ref_opt(&self) -> Option<&ComputedSpecification> {
         match self {
             SQLConstraints::CHECK(chk) => Some(chk),

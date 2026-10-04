@@ -68,98 +68,102 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, GenericDatasetDBMS>, 
     Ok(data_columns)
 }
 
-fn query_build_insertions(columns: &CanonnicalColumns) -> String {
+fn query_build_insertions(
+    columns: &Vec<CanonnicalColumns>,
+    table_name: &str,
+    schema_table: &str,
+) -> String {
     let mut batch = String::new();
     batch.push_str("INSERT INTO ");
-    batch.push_str(columns.get_table_ref());
+    batch.push_str(format!("{}.{}", table_name, schema_table).as_str());
     batch.push_str(" (");
-    let cols: String = columns.get_keys_as_joined_cols();
-    batch.push_str(&cols);
+    //let cols: String = columns.get_keys_as_joined_cols();
+    //batch.push_str(&cols);
     batch.push_str(") VALUES (");
-    let list_size: usize = columns.get_data_ref().len();
-    for (i, (_, val)) in columns.get_data_ref().iter().enumerate() {
-        batch.push_str(" ");
-        //mark data for it's type ('' for Strings and Dates)
-        let value_insert = match val {
-            GenericDatasetDBMS::SQLSERVER(values) => match values {
-                GenericDataSQLServer::Text(text) => {
-                    //format!("'{}'", text.as_ref().unwrap_or(&String::new()))
-                    if text.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("'{}'", text.as_ref().unwrap())
-                    }
-                }
-                //times
-                GenericDataSQLServer::Date(date) => {
-                    if date.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("'{}'", date.as_ref().unwrap())
-                    }
-                }
-                GenericDataSQLServer::DateTimeLocal(datelocal) => {
-                    if datelocal.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("'{}'", datelocal.as_ref().unwrap())
-                    }
-                }
-                //binaries
-                GenericDataSQLServer::BigBinary(binary) => {
-                    if binary.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("'{:?}'", binary.as_ref().unwrap())
-                    }
-                }
-                GenericDataSQLServer::Bit(bits) => {
-                    if bits.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("'{}'", bits.as_ref().unwrap())
-                    }
-                }
-                //numerics
-                GenericDataSQLServer::Int(ints) => {
-                    if ints.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("{}", ints.as_ref().unwrap())
-                    }
-                }
-                GenericDataSQLServer::SmallInt(sint) => {
-                    if sint.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("{}", sint.as_ref().unwrap())
-                    }
-                }
-                GenericDataSQLServer::Float(floats) => {
-                    if floats.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("{}", floats.as_ref().unwrap())
-                    }
-                }
-                GenericDataSQLServer::Bool(boolean) => {
-                    if boolean.as_ref().is_none() {
-                        "NULL".to_string()
-                    } else {
-                        format!("{}", boolean.as_ref().unwrap())
-                    }
-                }
-                _ => "".to_string(),
-            },
-            _ => "".to_string(),
-        };
-        batch.push_str(&value_insert);
-        if list_size - 1 == i {
-            batch.push_str(");");
-        } else {
-            batch.push_str(", ");
-        }
-    }
+    //let list_size: usize = columns.get_data_ref().len();
+    // for (i, (_, val)) in columns.get_data_ref().iter().enumerate() {
+    //     batch.push_str(" ");
+    //     //mark data for it's type ('' for Strings and Dates)
+    //     let value_insert = match val {
+    //         GenericDatasetDBMS::SQLSERVER(values) => match values {
+    //             GenericDataSQLServer::Text(text) => {
+    //                 //format!("'{}'", text.as_ref().unwrap_or(&String::new()))
+    //                 if text.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("'{}'", text.as_ref().unwrap())
+    //                 }
+    //             }
+    //             //times
+    //             GenericDataSQLServer::Date(date) => {
+    //                 if date.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("'{}'", date.as_ref().unwrap())
+    //                 }
+    //             }
+    //             GenericDataSQLServer::DateTimeLocal(datelocal) => {
+    //                 if datelocal.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("'{}'", datelocal.as_ref().unwrap())
+    //                 }
+    //             }
+    //             //binaries
+    //             GenericDataSQLServer::BigBinary(binary) => {
+    //                 if binary.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("'{:?}'", binary.as_ref().unwrap())
+    //                 }
+    //             }
+    //             GenericDataSQLServer::Bit(bits) => {
+    //                 if bits.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("'{}'", bits.as_ref().unwrap())
+    //                 }
+    //             }
+    //             //numerics
+    //             GenericDataSQLServer::Int(ints) => {
+    //                 if ints.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("{}", ints.as_ref().unwrap())
+    //                 }
+    //             }
+    //             GenericDataSQLServer::SmallInt(sint) => {
+    //                 if sint.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("{}", sint.as_ref().unwrap())
+    //                 }
+    //             }
+    //             GenericDataSQLServer::Float(floats) => {
+    //                 if floats.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("{}", floats.as_ref().unwrap())
+    //                 }
+    //             }
+    //             GenericDataSQLServer::Bool(boolean) => {
+    //                 if boolean.as_ref().is_none() {
+    //                     "NULL".to_string()
+    //                 } else {
+    //                     format!("{}", boolean.as_ref().unwrap())
+    //                 }
+    //             }
+    //             _ => "".to_string(),
+    //         },
+    //         _ => "".to_string(),
+    //     };
+    //     batch.push_str(&value_insert);
+    //     if list_size - 1 == i {
+    //         batch.push_str(");");
+    //     } else {
+    //         batch.push_str(", ");
+    //     }
+    // }
     batch
 }
 
@@ -195,20 +199,22 @@ pub async fn get_rows_from_tables(
         let table_rows = *table_metadata.get_total_rows_as_ref();
         let mut next: i32 = row_offset;
         let mut prev = 0;
+        
+        let pk_identifier = table_metadata
+            .get_constrs_as_ref()
+            .iter()
+            .find(|pred| match pred {
+                PRIMARYKEY(_) => true,
+                _ => false,
+            })
+            .unwrap_or(empty_otherwise);
+        
         while next <= table_rows {
             next += row_offset;
             if next > table_rows {
                 let res = next - table_rows;
                 next = next - res;
             }
-            let pk_identifier = table_metadata // remove loop
-                .get_constrs_as_ref()
-                .iter()
-                .find(|pred| match pred {
-                    PRIMARYKEY(_) => true,
-                    _ => false,
-                })
-                .unwrap_or(empty_otherwise);
             //Do the query!
             let columns_query = column_query_builder(table_metadata.get_cols_as_ref());
             let query_build = format!(
@@ -245,10 +251,8 @@ pub async fn get_rows_from_tables(
                     }
                 }
             }
-            for cols in cannon_col.iter() {
-                let batch = query_build_insertions(cols);
-                content_write.push_str(&format!("\n{}", &batch));
-            }
+            let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
+            content_write.push_str(&format!("\n{}", &batch));
             let file_name = format!(
                 "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}.txt",
                 table_key.0

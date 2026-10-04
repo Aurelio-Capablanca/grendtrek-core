@@ -10,6 +10,8 @@ pub mod cannonical_tables {
         table_name: String,
         table_schema: String,
         columns: Vec<ColumnMembers>,
+        primary_keys: Vec<IdentitySpecification>,
+        foreign_keys: Vec<ForeignKeys>,
         constraints: Vec<SQLConstraints>,
         indexes: Vec<TableIndex>,
         total_rows: i32,
@@ -20,6 +22,8 @@ pub mod cannonical_tables {
             table_name: String,
             table_schema: String,
             columns: Vec<ColumnMembers>,
+            primary_keys: Vec<IdentitySpecification>,
+            foreign_keys: Vec<ForeignKeys>,
             constraints: Vec<SQLConstraints>,
             indexes: Vec<TableIndex>,
             total_rows: i32,
@@ -28,6 +32,8 @@ pub mod cannonical_tables {
                 table_name: table_name,
                 table_schema: table_schema,
                 columns: columns,
+                primary_keys: primary_keys,
+                foreign_keys: foreign_keys,
                 constraints: constraints,
                 indexes: indexes,
                 total_rows: total_rows,
@@ -39,6 +45,8 @@ pub mod cannonical_tables {
                 table_name: table_name,
                 table_schema: schema_name,
                 columns: Vec::new(),
+                primary_keys: Vec::new(),
+                foreign_keys: Vec::new(),
                 constraints: Vec::new(),
                 indexes: Vec::new(),
                 total_rows: 0,
@@ -50,6 +58,8 @@ pub mod cannonical_tables {
                 table_name: "".to_string(),
                 table_schema: "".to_string(),
                 columns: Vec::new(),
+                primary_keys: Vec::new(),
+                foreign_keys: Vec::new(),
                 constraints: Vec::new(),
                 indexes: Vec::new(),
                 total_rows: 0,
@@ -66,6 +76,14 @@ pub mod cannonical_tables {
 
         pub fn get_constrs_as_ref_mut(&mut self) -> &mut Vec<SQLConstraints> {
             &mut self.constraints
+        }
+        
+        pub fn get_pk_as_ref (&self) -> &Vec<IdentitySpecification> {
+            &self.primary_keys
+        }
+        
+        pub fn get_fk_as_ref(&self) -> &Vec<ForeignKeys> {
+            &self.foreign_keys
         }
 
         pub fn get_cols_as_ref_sort(&mut self) -> &Vec<ColumnMembers> {
@@ -86,8 +104,12 @@ pub mod cannonical_tables {
             self.columns.push(col);
         }
 
-        pub fn add_fks(&mut self, fk: ForeignKeys) {
-            self.constraints.push(SQLConstraints::FOREIGNKEY(fk));
+        pub fn add_pk(&mut self, pk: IdentitySpecification) {            
+            self.primary_keys.push(pk);
+        }
+        
+        pub fn add_fks(&mut self, fk: ForeignKeys) {            
+            self.foreign_keys.push(fk);
         }
 
         pub fn add_computed_res(&mut self, comp: SQLConstraints) {
@@ -96,10 +118,6 @@ pub mod cannonical_tables {
 
         pub fn add_indexes(&mut self, index: TableIndex) {
             self.indexes.push(index);
-        }
-
-        pub fn add_pk(&mut self, pk: IdentitySpecification) {
-            self.constraints.push(SQLConstraints::PRIMARYKEY(pk));
         }
 
         pub fn get_table_name(&self) -> &str {
