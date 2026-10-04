@@ -212,8 +212,9 @@ pub fn translate_ddl(
         let table_keys: &(String, String) = struct_table.0;
         let table_metadata: &TableMetadata = struct_table.1;
         let columns = table_metadata.get_cols_as_ref();
-        let pk_fields = table_metadata.get_pk_as_ref();
+        let pk_fields = table_metadata.get_pk_as_ref();        
         let num_pks: usize = pk_fields.len();
+        //println!("pk_fields len : {} ",num_pks);
         ddl_generation.push_str("create table ");
         ddl_generation.push_str(&table_keys.1);
         ddl_generation.push_str(".");

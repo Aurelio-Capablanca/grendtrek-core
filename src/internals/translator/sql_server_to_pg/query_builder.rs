@@ -13,7 +13,7 @@ use crate::internals::{
     data_structures::database_metadata::{
         constraint_metadata::{
             IdentitySpecification,
-            SQLConstraints::{self, PRIMARYKEY},
+            SQLConstraints::{self},
         },
         db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
         table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
@@ -192,8 +192,7 @@ pub async fn get_rows_from_tables(
     row_offset: i32,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut cannon_col: Vec<CanonnicalColumns> = Vec::new();
-    for metadata in tables_metadata {
-        let empty_otherwise = &SQLConstraints::PRIMARYKEY(IdentitySpecification::empty_struct());
+    for metadata in tables_metadata {        
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
         let table_rows = *table_metadata.get_total_rows_as_ref();
@@ -201,13 +200,8 @@ pub async fn get_rows_from_tables(
         let mut prev = 0;
         
         let pk_identifier = table_metadata
-            .get_constrs_as_ref()
-            .iter()
-            .find(|pred| match pred {
-                PRIMARYKEY(_) => true,
-                _ => false,
-            })
-            .unwrap_or(empty_otherwise);
+            .get_pk_as_ref().iter().find(|pred| pred.get_table_name_as_ref().eq(&table_key.1))
+            .unwrap().get_col_name_as_ref();
         
         while next <= table_rows {
             next += row_offset;
@@ -222,10 +216,7 @@ pub async fn get_rows_from_tables(
                 columns_query,
                 table_key.1, //schema
                 table_key.0, //table
-                pk_identifier
-                    .get_pk_ref_opt()
-                    .unwrap()
-                    .get_col_name_as_ref(),
+                pk_identifier,
                 prev, //Offset
                 next, // Next
             );
