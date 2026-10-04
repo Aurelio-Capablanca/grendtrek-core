@@ -3,7 +3,7 @@ use std::{collections::HashMap, sync::LazyLock};
 use crate::internals::data_structures::{
     database_connector_spec::VendorOptions,
     database_metadata::{
-        constraint_metadata::{IdentitySpecification, SQLConstraints},
+        constraint_metadata::IdentitySpecification,
         db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
     },
     database_types::{
@@ -214,7 +214,6 @@ pub fn translate_ddl(
         let columns = table_metadata.get_cols_as_ref();
         let pk_fields = table_metadata.get_pk_as_ref();        
         let num_pks: usize = pk_fields.len();
-        //println!("pk_fields len : {} ",num_pks);
         ddl_generation.push_str("create table ");
         ddl_generation.push_str(&table_keys.1);
         ddl_generation.push_str(".");

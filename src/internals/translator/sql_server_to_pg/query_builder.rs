@@ -12,8 +12,7 @@ use tiberius::{
 use crate::internals::{
     data_structures::database_metadata::{
         constraint_metadata::{
-            IdentitySpecification,
-            SQLConstraints::{self},
+            IdentitySpecification           
         },
         db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
         table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
