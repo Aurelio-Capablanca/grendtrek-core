@@ -11,9 +11,7 @@ use tiberius::{
 
 use crate::internals::{
     data_structures::database_metadata::{
-        constraint_metadata::{
-            IdentitySpecification           
-        },
+        constraint_metadata::IdentitySpecification,
         db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
         table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
     },
@@ -76,93 +74,96 @@ fn query_build_insertions(
     batch.push_str("INSERT INTO ");
     batch.push_str(format!("{}.{}", table_name, schema_table).as_str());
     batch.push_str(" (");
-    //let cols: String = columns.get_keys_as_joined_cols();
-    //batch.push_str(&cols);
-    batch.push_str(") VALUES (");
-    //let list_size: usize = columns.get_data_ref().len();
-    // for (i, (_, val)) in columns.get_data_ref().iter().enumerate() {
-    //     batch.push_str(" ");
-    //     //mark data for it's type ('' for Strings and Dates)
-    //     let value_insert = match val {
-    //         GenericDatasetDBMS::SQLSERVER(values) => match values {
-    //             GenericDataSQLServer::Text(text) => {
-    //                 //format!("'{}'", text.as_ref().unwrap_or(&String::new()))
-    //                 if text.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("'{}'", text.as_ref().unwrap())
-    //                 }
-    //             }
-    //             //times
-    //             GenericDataSQLServer::Date(date) => {
-    //                 if date.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("'{}'", date.as_ref().unwrap())
-    //                 }
-    //             }
-    //             GenericDataSQLServer::DateTimeLocal(datelocal) => {
-    //                 if datelocal.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("'{}'", datelocal.as_ref().unwrap())
-    //                 }
-    //             }
-    //             //binaries
-    //             GenericDataSQLServer::BigBinary(binary) => {
-    //                 if binary.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("'{:?}'", binary.as_ref().unwrap())
-    //                 }
-    //             }
-    //             GenericDataSQLServer::Bit(bits) => {
-    //                 if bits.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("'{}'", bits.as_ref().unwrap())
-    //                 }
-    //             }
-    //             //numerics
-    //             GenericDataSQLServer::Int(ints) => {
-    //                 if ints.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("{}", ints.as_ref().unwrap())
-    //                 }
-    //             }
-    //             GenericDataSQLServer::SmallInt(sint) => {
-    //                 if sint.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("{}", sint.as_ref().unwrap())
-    //                 }
-    //             }
-    //             GenericDataSQLServer::Float(floats) => {
-    //                 if floats.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("{}", floats.as_ref().unwrap())
-    //                 }
-    //             }
-    //             GenericDataSQLServer::Bool(boolean) => {
-    //                 if boolean.as_ref().is_none() {
-    //                     "NULL".to_string()
-    //                 } else {
-    //                     format!("{}", boolean.as_ref().unwrap())
-    //                 }
-    //             }
-    //             _ => "".to_string(),
-    //         },
-    //         _ => "".to_string(),
-    //     };
-    //     batch.push_str(&value_insert);
-    //     if list_size - 1 == i {
-    //         batch.push_str(");");
-    //     } else {
-    //         batch.push_str(", ");
-    //     }
-    // }
+    let first_col = columns.first().unwrap();
+    let cols: String = first_col.get_keys_as_joined_cols();
+    batch.push_str(&cols);
+    batch.push_str(") VALUES ");
+    columns.iter().for_each(|cols_data| {
+        let list_size: usize = cols_data.get_data_ref().len();
+        for (i, (_, val)) in cols_data.get_data_ref().iter().enumerate() {
+            batch.push_str(" (");
+            //mark data for it's type ('' for Strings and Dates)
+            let value_insert = match val {
+                GenericDatasetDBMS::SQLSERVER(values) => match values {
+                    GenericDataSQLServer::Text(text) => {
+                        //format!("'{}'", text.as_ref().unwrap_or(&String::new()))
+                        if text.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("'{}'", text.as_ref().unwrap())
+                        }
+                    }
+                    //times
+                    GenericDataSQLServer::Date(date) => {
+                        if date.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("'{}'", date.as_ref().unwrap())
+                        }
+                    }
+                    GenericDataSQLServer::DateTimeLocal(datelocal) => {
+                        if datelocal.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("'{}'", datelocal.as_ref().unwrap())
+                        }
+                    }
+                    //binaries
+                    GenericDataSQLServer::BigBinary(binary) => {
+                        if binary.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("'{:?}'", binary.as_ref().unwrap())
+                        }
+                    }
+                    GenericDataSQLServer::Bit(bits) => {
+                        if bits.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("'{}'", bits.as_ref().unwrap())
+                        }
+                    }
+                    //numerics
+                    GenericDataSQLServer::Int(ints) => {
+                        if ints.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("{}", ints.as_ref().unwrap())
+                        }
+                    }
+                    GenericDataSQLServer::SmallInt(sint) => {
+                        if sint.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("{}", sint.as_ref().unwrap())
+                        }
+                    }
+                    GenericDataSQLServer::Float(floats) => {
+                        if floats.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("{}", floats.as_ref().unwrap())
+                        }
+                    }
+                    GenericDataSQLServer::Bool(boolean) => {
+                        if boolean.as_ref().is_none() {
+                            "NULL".to_string()
+                        } else {
+                            format!("{}", boolean.as_ref().unwrap())
+                        }
+                    }
+                    _ => "".to_string(),
+                },
+                _ => "".to_string(),
+            };
+            batch.push_str(&value_insert);
+            batch.push_str("),");
+            // if list_size - 1 == i {            
+            // } else {                
+            // }
+            // batch.push_str(");");
+        }
+    });
     batch
 }
 
@@ -191,17 +192,19 @@ pub async fn get_rows_from_tables(
     row_offset: i32,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut cannon_col: Vec<CanonnicalColumns> = Vec::new();
-    for metadata in tables_metadata {        
+    for metadata in tables_metadata {
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
         let table_rows = *table_metadata.get_total_rows_as_ref();
         let mut next: i32 = row_offset;
         let mut prev = 0;
-        
+        let empty_otherwise = IdentitySpecification::empty_struct();
         let pk_identifier = table_metadata
-            .get_pk_as_ref().iter().find(|pred| pred.get_table_name_as_ref().eq(&table_key.1))
-            .unwrap().get_col_name_as_ref();
-        
+            .get_pk_as_ref()
+            .iter()
+            .find(|pred| pred.get_table_name_as_ref().eq(&table_key.0))
+            .unwrap_or(&empty_otherwise)
+            .get_col_name_as_ref();
         while next <= table_rows {
             next += row_offset;
             if next > table_rows {
@@ -219,6 +222,7 @@ pub async fn get_rows_from_tables(
                 prev, //Offset
                 next, // Next
             );
+            println!("Query exec : {}", query_build);
             let mut content_write = String::new();
             content_write.push_str(&query_build);
             //Execute Query!
@@ -244,8 +248,10 @@ pub async fn get_rows_from_tables(
             let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
             content_write.push_str(&format!("\n{}", &batch));
             let file_name = format!(
-                "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}.txt",
-                table_key.0
+                "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}-offset{}-next{}.txt",
+                table_key.0,
+                prev, //Offset
+                next, // Next
             );
             println!("schema : {} | table : {}", table_key.0, table_key.1);
             write_to_file_os(content_write, &file_name.to_string());

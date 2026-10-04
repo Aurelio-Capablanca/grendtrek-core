@@ -158,7 +158,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let unbox = err.as_ref().to_string();
             eprintln!("Error at issue Collations : {}", unbox);
         }
-    }    
+    }
     //  --- type translation (for DDL pass)
     let type_conversion = type_usages.iter().filter(|pred| match pred.get_origin_engine()  {
                     VendorOptions::MSSQL => true,
@@ -178,12 +178,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Vec::new()
             }
         };
-    
+
     //Write DDL Generated
     let location: &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/ddl.sql";
     let content = ddl_for_pg.join(" \n");
     utilities::file_writer::write_to_file_os(content, location);
-    
+
     //create Tables
     let pg_con: &mut PgPoolHandler = match destiny {
         DatabaseHandlers::PostgresPool(pg_pool) => pg_pool,
@@ -209,24 +209,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     let offset: i32 = 1000;
-    
-    //Write all memory for check current Canonical model
-    let location_cannon: &str = "/data/Main/personal_projects/own/grendtrekk_writes_ddl/canonnical_model.txt";
-    let content = canonnical_model
-        .into_iter()
-        .map(|data| {            
-            let table = data.0.0;
-            let schema = data.0.1;
-            let metadata = data.1;
-            let formatter = format!("Table : {} Schema : {} | Content : {:?}",table,schema,metadata);
-            formatter
-        })
-        .collect::<Vec<String>>()
-        .join(" \n");
-    
-    utilities::file_writer::write_to_file_os(content, location_cannon);
-    // let result_types =
-    //     query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
-    
+
+    let result_types =
+        query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+    println!("Is Successful : {}", result_types);
+
     Ok(())
 }
