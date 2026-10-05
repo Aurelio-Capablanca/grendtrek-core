@@ -1,6 +1,5 @@
 use std::{
-    collections::{HashMap, HashSet},
-    env,
+    collections::{HashMap, HashSet}, env, time::Instant,
 };
 
 mod internals;
@@ -28,6 +27,8 @@ use crate::outer::databases::{
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let now_start = Instant::now();
+    println!("{:?}",now_start);
     //.ENV settings:
     dotenvy::dotenv().ok();
     let feature = env::var("FEATURES").expect("No loaded line");
@@ -213,6 +214,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
     println!("Is Successful : {}", result_types);
-
+    let end_now = Instant::now();
+    println!("time elapsed : {:?}",end_now.duration_since(now_start));
     Ok(())
 }

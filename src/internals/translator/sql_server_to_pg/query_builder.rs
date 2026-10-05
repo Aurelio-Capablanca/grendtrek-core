@@ -1,13 +1,15 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Error};
 
 use bb8_tiberius::ConnectionManager;
 use futures_util::TryStreamExt;
 use tiberius::{
     ColumnType::{self},
-    QueryItem, Row, Uuid,
+    Row, Uuid,
     numeric::Numeric,
     time::chrono::{NaiveDate, NaiveDateTime},
 };
+use tiberius::{QueryItem, QueryStream};
+use tokio_util::io::simplex::new;
 
 use crate::internals::{
     data_structures::database_metadata::{
@@ -18,12 +20,15 @@ use crate::internals::{
     utilities::file_writer::write_to_file_os,
 };
 
-fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, GenericDatasetDBMS>, Box<String>> {
-    let mut data_columns: HashMap<String, GenericDatasetDBMS> = HashMap::new();
-    for (i, column) in row.columns().iter().enumerate() {
-        let col_name = column.name();
-        let col_type = column.column_type();
-        let value = match col_type {
+async fn query_stream_to_canonnical(
+    mut stream: QueryItem,
+) -> Result<Vec<(String, GenericDatasetDBMS)>, Box<dyn std::error::Error>> {
+    let mut result: Vec<(String, GenericDatasetDBMS)> = Vec::new();
+    let metadata = stream.as_metadata().unwrap();
+    let row = stream.as_row().unwrap();
+    for col in metadata.columns() {
+        let i = col.name();
+        let value = match col.column_type() {
             ColumnType::Int4 => GenericDataSQLServer::Int(row.get(i)),
             ColumnType::Int2 => GenericDataSQLServer::SmallInt(row.get(i)),
             ColumnType::Int1 => {
@@ -58,11 +63,15 @@ fn rows_to_canonnical(row: &Row) -> Result<HashMap<String, GenericDatasetDBMS>, 
                 let unique_id: Uuid = row.get(i).unwrap();
                 GenericDataSQLServer::Text(Some(unique_id.to_string()))
             }
-            _ => return Err(Box::new(String::new())),
+            _ => {
+                return Err(Box::new(Error::new(
+                    std::io::ErrorKind::BrokenPipe,
+                    "Error parsing data from Origin",
+                )));
+            }
         };
-        data_columns.insert(col_name.to_string(), GenericDatasetDBMS::SQLSERVER(value));
     }
-    Ok(data_columns)
+    Ok(result)
 }
 
 fn query_build_insertions(
@@ -79,8 +88,9 @@ fn query_build_insertions(
     batch.push_str(&cols);
     batch.push_str(") VALUES ");
     columns.iter().for_each(|cols_data| {
-        let list_size: usize = cols_data.get_data_ref().len();
-        for (i, (_, val)) in cols_data.get_data_ref().iter().enumerate() {
+        let fields: &Vec<(_, GenericDatasetDBMS)> = cols_data.get_data_ref();
+        let list_size: usize = fields.len();
+        for (i, (_, val)) in fields.iter().enumerate() {
             batch.push_str(" (");
             //mark data for it's type ('' for Strings and Dates)
             let value_insert = match val {
@@ -157,11 +167,11 @@ fn query_build_insertions(
                 _ => "".to_string(),
             };
             batch.push_str(&value_insert);
-            batch.push_str("),");
-            // if list_size - 1 == i {            
-            // } else {                
-            // }
-            // batch.push_str(");");
+            if list_size - 1 == i {
+                batch.push_str(");");
+            } else {
+                batch.push_str("),");
+            }
         }
     });
     batch
@@ -222,39 +232,25 @@ pub async fn get_rows_from_tables(
                 prev, //Offset
                 next, // Next
             );
-            println!("Query exec : {}", query_build);
+            //println!("Query exec : {}", query_build);
             let mut content_write = String::new();
             content_write.push_str(&query_build);
             //Execute Query!
             let mut streams = connection.query(query_build, &[]).await?;
-            while let Some(row) = streams.try_next().await? {
-                match row {
-                    QueryItem::Metadata(meta) => {
-                        println!(
-                            "Result set {} has {} columns",
-                            meta.result_index(),
-                            meta.columns().len()
-                        );
-                    }
-                    QueryItem::Row(row) => {
-                        let canonical_row: HashMap<String, GenericDatasetDBMS> =
-                            rows_to_canonnical(&row).unwrap();
-                        let canonical =
-                            CanonnicalColumns::new(table_key.0.to_string(), canonical_row);
-                        cannon_col.push(canonical);
-                    }
-                }
+            while let Some(stream) = streams.try_next().await? {
+                let middle = query_stream_to_canonnical(stream);
             }
-            let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
-            content_write.push_str(&format!("\n{}", &batch));
+            //let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
+            //content_write.push_str(&format!("\n{}", &batch));
             let file_name = format!(
                 "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}-offset{}-next{}.txt",
                 table_key.0,
                 prev, //Offset
                 next, // Next
             );
-            println!("schema : {} | table : {}", table_key.0, table_key.1);
-            write_to_file_os(content_write, &file_name.to_string());
+            //
+            // println!("schema : {} | table : {}", table_key.0, table_key.1);
+            //write_to_file_os(content_write, &file_name.to_string());
             //clear actions
             content_write = "".to_string();
             prev = next;

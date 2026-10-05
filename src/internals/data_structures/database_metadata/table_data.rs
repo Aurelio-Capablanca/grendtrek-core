@@ -29,11 +29,11 @@ pub enum GenericDatasetDBMS {
 #[derive(Debug)]
 pub struct CanonnicalColumns {
     table_name: String,
-    values: HashMap<String /*column_name*/, GenericDatasetDBMS>, /*held value*/
+    values: Vec<(String, GenericDatasetDBMS)>//HashMap<String /*column_name*/, GenericDatasetDBMS>, /*held value*/
 }
 
 impl CanonnicalColumns {
-    pub fn new(table_name: String, cols: HashMap<String, GenericDatasetDBMS>) -> Self {
+    pub fn new(table_name: String, cols: Vec<(String, GenericDatasetDBMS)>) -> Self {
         Self {
             table_name,
             values: cols,
@@ -43,14 +43,30 @@ impl CanonnicalColumns {
     pub fn new_all_in(table_name: String, col_name: String, value: GenericDatasetDBMS) -> Self {
         Self {
             table_name,
-            values: HashMap::from([(col_name, value)]),
+            values: Vec::from([(col_name, value)]) //HashMap::from([(col_name, value)]),
         }
     }
 
     pub fn get_table_ref(&self) -> &str {
         &self.table_name
     }
-
+    
+    pub fn get_keys_as_joined_cols(&self) -> String {
+        let values = &self.values;
+        values
+            .into_iter()
+            .map(|data| {
+                data.0.clone()
+            })
+            .collect::<Vec<String>>()
+            .join(",")
+    }
+    
+    pub fn get_data_ref(&self) -> &Vec<(String, GenericDatasetDBMS)> {
+        &self.values
+    }
+    
+/*
     pub fn get_keys_ref(&self) -> Vec<&String> {
         let values = &self.values;
         values
@@ -65,15 +81,7 @@ impl CanonnicalColumns {
         values.keys().len()
     }
 
-    pub fn get_keys_as_joined_cols(&self) -> String {
-        let values = &self.values;
-        values
-            .keys()
-            .into_iter()
-            .map(|data| data.clone())
-            .collect::<Vec<String>>()
-            .join(",")
-    }
+
 
     pub fn get_ref_cols(&self) -> &HashMap<String, GenericDatasetDBMS> {
         &self.values
@@ -83,9 +91,7 @@ impl CanonnicalColumns {
         &self.values.get(&key).unwrap()
     }
 
-    pub fn get_data_ref(&self) -> &HashMap<String, GenericDatasetDBMS> {
-        &self.values
-    }
+    
 
     pub fn get_ref_data_to_str(&self, key: String) -> String {
         let content_getter = &self.values.get(&key);
@@ -144,4 +150,5 @@ impl CanonnicalColumns {
         };
         output
     }
+    */
 }
