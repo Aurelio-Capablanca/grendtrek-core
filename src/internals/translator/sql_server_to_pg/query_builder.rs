@@ -2,74 +2,90 @@ use std::{collections::HashMap, io::Error};
 
 use bb8_tiberius::ConnectionManager;
 use futures_util::TryStreamExt;
+use tiberius::QueryItem;
 use tiberius::{
     ColumnType::{self},
-    Row, Uuid,
+    Uuid,
     numeric::Numeric,
     time::chrono::{NaiveDate, NaiveDateTime},
 };
-use tiberius::{QueryItem, QueryStream};
-use tokio_util::io::simplex::new;
 
-use crate::internals::{
-    data_structures::database_metadata::{
-        constraint_metadata::IdentitySpecification,
-        db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
-        table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
-    },
-    utilities::file_writer::write_to_file_os,
+use crate::internals::data_structures::database_metadata::{
+    constraint_metadata::IdentitySpecification,
+    db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
+    table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
 };
+use crate::utilities::file_writer;
 
-async fn query_stream_to_canonnical(
-    mut stream: QueryItem,
+fn query_value_build(
+    stream: QueryItem,
 ) -> Result<Vec<(String, GenericDatasetDBMS)>, Box<dyn std::error::Error>> {
     let mut result: Vec<(String, GenericDatasetDBMS)> = Vec::new();
-    let metadata = stream.as_metadata().unwrap();
-    let row = stream.as_row().unwrap();
-    for col in metadata.columns() {
-        let i = col.name();
-        let value = match col.column_type() {
-            ColumnType::Int4 => GenericDataSQLServer::Int(row.get(i)),
-            ColumnType::Int2 => GenericDataSQLServer::SmallInt(row.get(i)),
-            ColumnType::Int1 => {
-                GenericDataSQLServer::Bit(row.get::<u8, _>(i).map(|data| data.to_be()))
+    match stream {
+        QueryItem::Row(row) => {
+            for col in row.columns() {
+                let i = col.name();
+                let value = match col.column_type() {
+                    ColumnType::Int4 => {
+                        let val = row.get(i);
+                        GenericDataSQLServer::Int(val)
+                    }
+                    ColumnType::Int2 => {
+                        let val = row.get(i);
+                        GenericDataSQLServer::SmallInt(val)
+                    }
+                    ColumnType::Int1 => {
+                        let val = row.get::<u8, _>(i).map(|data| data.to_be());
+                        GenericDataSQLServer::Bit(val)
+                    }
+                    ColumnType::NVarchar | ColumnType::NChar => {
+                        let val = row.get::<&str, _>(i).map(|data| data.to_string());
+                        GenericDataSQLServer::Text(val)
+                    }
+                    ColumnType::BigVarChar => {
+                        let val = row.get::<&str, _>(i).map(|data| data.to_string());
+                        GenericDataSQLServer::Text(val)
+                    }
+                    ColumnType::Datetime | ColumnType::Datetimen => {
+                        let val: Option<NaiveDateTime> = row.get(i);
+                        GenericDataSQLServer::DateTimeLocal(val)
+                    }
+                    ColumnType::Daten => {
+                        let val: Option<NaiveDate> = row.get(i);
+                        GenericDataSQLServer::Date(val)
+                    }
+                    ColumnType::BigVarBin => {
+                        let val: Option<Vec<u8>> = row.get::<&[u8], _>(i).map(|b| b.to_vec());
+                        GenericDataSQLServer::BigBinary(val)
+                    }
+                    ColumnType::Numericn | ColumnType::Decimaln => {
+                        let decimal_n: Numeric =
+                            row.get(i).unwrap_or_else(|| Numeric::new_with_scale(0, 0));
+                        GenericDataSQLServer::Float(Some(f64::from(decimal_n)))
+                    }
+                    ColumnType::Money => {
+                        let val = row.get(i);
+                        GenericDataSQLServer::Float(val)
+                    }
+                    ColumnType::Bit => {
+                        let val = row.get(i);
+                        GenericDataSQLServer::Bool(val)
+                    }
+                    ColumnType::Guid => {
+                        let unique_id: Uuid = row.get(i).unwrap();
+                        GenericDataSQLServer::Text(Some(unique_id.to_string()))
+                    }
+                    _ => {
+                        return Err(Box::new(Error::new(
+                            std::io::ErrorKind::BrokenPipe,
+                            "Error parsing data from Origin",
+                        )));
+                    }
+                };
+                result.push((i.to_string(), GenericDatasetDBMS::SQLSERVER(value)));
             }
-            ColumnType::NVarchar | ColumnType::NChar => {
-                GenericDataSQLServer::Text(row.get::<&str, _>(i).map(|data| data.to_string()))
-            }
-            ColumnType::BigVarChar => {
-                GenericDataSQLServer::Text(row.get::<&str, _>(i).map(|data| data.to_string()))
-            }
-            ColumnType::Datetime | ColumnType::Datetimen => {
-                let val: Option<NaiveDateTime> = row.get(i);
-                GenericDataSQLServer::DateTimeLocal(val)
-            }
-            ColumnType::Daten => {
-                let val: Option<NaiveDate> = row.get(i);
-                GenericDataSQLServer::Date(val)
-            }
-            ColumnType::BigVarBin => {
-                let val: Option<Vec<u8>> = row.get::<&[u8], _>(i).map(|b| b.to_vec());
-                GenericDataSQLServer::BigBinary(val)
-            }
-            ColumnType::Numericn | ColumnType::Decimaln => {
-                let decimal_n: Numeric =
-                    row.get(i).unwrap_or_else(|| Numeric::new_with_scale(0, 0));
-                GenericDataSQLServer::Float(Some(f64::from(decimal_n)))
-            }
-            ColumnType::Money => GenericDataSQLServer::Float(row.get(i)),
-            ColumnType::Bit => GenericDataSQLServer::Bool(row.get(i)),
-            ColumnType::Guid => {
-                let unique_id: Uuid = row.get(i).unwrap();
-                GenericDataSQLServer::Text(Some(unique_id.to_string()))
-            }
-            _ => {
-                return Err(Box::new(Error::new(
-                    std::io::ErrorKind::BrokenPipe,
-                    "Error parsing data from Origin",
-                )));
-            }
-        };
+        }
+        _ => {}
     }
     Ok(result)
 }
@@ -83,7 +99,16 @@ fn query_build_insertions(
     batch.push_str("INSERT INTO ");
     batch.push_str(format!("{}.{}", table_name, schema_table).as_str());
     batch.push_str(" (");
-    let first_col = columns.first().unwrap();
+    let first_col = match columns.get(1) {
+        Some(val) => {
+            println!("{:?}", val);
+            val
+        }
+        None => {
+            eprintln!("Error parsing the first element in the list!");
+            return " ".to_string();
+        }
+    };
     let cols: String = first_col.get_keys_as_joined_cols();
     batch.push_str(&cols);
     batch.push_str(") VALUES ");
@@ -91,7 +116,9 @@ fn query_build_insertions(
         let fields: &Vec<(_, GenericDatasetDBMS)> = cols_data.get_data_ref();
         let list_size: usize = fields.len();
         for (i, (_, val)) in fields.iter().enumerate() {
-            batch.push_str(" (");
+            if i.eq(&0) {
+                batch.push_str(" (");
+            }
             //mark data for it's type ('' for Strings and Dates)
             let value_insert = match val {
                 GenericDatasetDBMS::SQLSERVER(values) => match values {
@@ -238,10 +265,13 @@ pub async fn get_rows_from_tables(
             //Execute Query!
             let mut streams = connection.query(query_build, &[]).await?;
             while let Some(stream) = streams.try_next().await? {
-                let middle = query_stream_to_canonnical(stream);
-            }
-            //let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
-            //content_write.push_str(&format!("\n{}", &batch));
+                let middle = query_value_build(stream).unwrap();
+                let cannon_col_si =
+                    CanonnicalColumns::new(table_key.0.as_str().to_string(), middle);
+                cannon_col.push(cannon_col_si);
+            }            
+            let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
+            content_write.push_str(&format!("\n{}", &batch));
             let file_name = format!(
                 "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}-offset{}-next{}.txt",
                 table_key.0,
@@ -250,7 +280,7 @@ pub async fn get_rows_from_tables(
             );
             //
             // println!("schema : {} | table : {}", table_key.0, table_key.1);
-            //write_to_file_os(content_write, &file_name.to_string());
+            file_writer::write_to_file_os(content_write, &file_name.to_string());
             //clear actions
             content_write = "".to_string();
             prev = next;

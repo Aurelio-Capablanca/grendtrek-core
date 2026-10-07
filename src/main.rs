@@ -201,6 +201,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             eprintln!("Error at creating tables in destination : {}", err)
         }
     }
+    let end_time_tb_creation = Instant::now();
+    println!("time to create all tables: {:?}",end_time_tb_creation.duration_since(now_start));
 
     // insert bulks
     let mut connection = match origin {

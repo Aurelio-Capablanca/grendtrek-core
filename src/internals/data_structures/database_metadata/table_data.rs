@@ -56,7 +56,7 @@ impl CanonnicalColumns {
         values
             .into_iter()
             .map(|data| {
-                data.0.clone()
+                data.0.as_str().to_string()
             })
             .collect::<Vec<String>>()
             .join(",")
