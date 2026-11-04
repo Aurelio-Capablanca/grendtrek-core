@@ -12,8 +12,7 @@ use tiberius::{
 
 use crate::internals::data_structures::database_metadata::{
     constraint_metadata::IdentitySpecification,
-    db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
-    table_data::{CanonnicalColumns, GenericDataSQLServer, GenericDatasetDBMS},
+    db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata}
 };
 use crate::utilities::file_writer;
 
@@ -25,6 +24,8 @@ fn build_insertion_dml_sentence(
     stream: QueryItem,
     table_name: &str,
     schema_table: &str,
+    //call here type conversion!
+    // 
 ) -> Result<String, Box<dyn std::error::Error>> {
     let mut dml_batch = String::new();
     dml_batch.push_str("INSERT INTO ");
@@ -43,11 +44,20 @@ fn build_insertion_dml_sentence(
     match stream {
         QueryItem::Row(row) => {
             for (i, col) in row.columns().iter().enumerate() {
-                let col_type = col.column_type();
-                match col_type {
-                    ColumnType::Null => {}
-                    _ => {}
+                if i.eq(&0) {
+                    dml_batch.push_str(" (");
                 }
+                let col_type = col.column_type();
+                let value : String = match col_type {
+                    ColumnType::Null => {
+                        "'NULL'".to_string()
+                    }
+                    
+                    _ => {
+                        "'NULL'".to_string()
+                    }
+                };
+                //reconsider strategy at calling per row call!
             }
         }
         _ => {}
@@ -271,8 +281,7 @@ pub async fn get_rows_from_tables(
     tables_metadata: &HashMap<(String, String), TableMetadata>,
     connection: &mut bb8::PooledConnection<'_, ConnectionManager>,
     row_offset: i32,
-) -> Result<bool, Box<dyn std::error::Error>> {
-    let mut cannon_col: Vec<CanonnicalColumns> = Vec::new();
+) -> Result<bool, Box<dyn std::error::Error>> {    
     //removable mutable String
     let mut all_queries_made = String::new();
     //
@@ -339,8 +348,7 @@ pub async fn get_rows_from_tables(
             file_writer::write_to_file_os(content_write, &file_name.to_string());
             //clear actions
             content_write = "".to_string();
-            prev = next;
-            cannon_col.clear();
+            prev = next;            
             if next == table_rows {
                 break;
             }
