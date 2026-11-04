@@ -17,198 +17,236 @@ use crate::internals::data_structures::database_metadata::{
 };
 use crate::utilities::file_writer;
 
-fn query_value_build(
+/**
+ Work at gathering all the columns without too much recomputation from the original execution at
+ "column_query_builder" -> line 33
+*/
+fn build_insertion_dml_sentence(
     stream: QueryItem,
-) -> Result<Vec<(String, GenericDatasetDBMS)>, Box<dyn std::error::Error>> {
-    let mut result: Vec<(String, GenericDatasetDBMS)> = Vec::new();
+    table_name: &str,
+    schema_table: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
+    let mut dml_batch = String::new();
+    dml_batch.push_str("INSERT INTO ");
+    dml_batch.push_str(format!("{}.{}", table_name, schema_table).as_str());
+    dml_batch.push_str(" (");
+    // let first_col = match columns.get(1) {
+    //     Some(val) => {
+    //         println!("{:?}", val);
+    //         val
+    //     }
+    //     None => {
+    //         eprintln!("Error parsing the first element in the list!");
+    //         return " ".to_string();
+    //     }
+    // };
     match stream {
         QueryItem::Row(row) => {
-            for col in row.columns() {
-                let i = col.name();
-                let value = match col.column_type() {
-                    ColumnType::Int4 => {
-                        let val = row.get(i);
-                        GenericDataSQLServer::Int(val)
-                    }
-                    ColumnType::Int2 => {
-                        let val = row.get(i);
-                        GenericDataSQLServer::SmallInt(val)
-                    }
-                    ColumnType::Int1 => {
-                        let val = row.get::<u8, _>(i).map(|data| data.to_be());
-                        GenericDataSQLServer::Bit(val)
-                    }
-                    ColumnType::NVarchar | ColumnType::NChar => {
-                        let val = row.get::<&str, _>(i).map(|data| data.to_string());
-                        GenericDataSQLServer::Text(val)
-                    }
-                    ColumnType::BigVarChar => {
-                        let val = row.get::<&str, _>(i).map(|data| data.to_string());
-                        GenericDataSQLServer::Text(val)
-                    }
-                    ColumnType::Datetime | ColumnType::Datetimen => {
-                        let val: Option<NaiveDateTime> = row.get(i);
-                        GenericDataSQLServer::DateTimeLocal(val)
-                    }
-                    ColumnType::Daten => {
-                        let val: Option<NaiveDate> = row.get(i);
-                        GenericDataSQLServer::Date(val)
-                    }
-                    ColumnType::BigVarBin => {
-                        let val: Option<Vec<u8>> = row.get::<&[u8], _>(i).map(|b| b.to_vec());
-                        GenericDataSQLServer::BigBinary(val)
-                    }
-                    ColumnType::Numericn | ColumnType::Decimaln => {
-                        let decimal_n: Numeric =
-                            row.get(i).unwrap_or_else(|| Numeric::new_with_scale(0, 0));
-                        GenericDataSQLServer::Float(Some(f64::from(decimal_n)))
-                    }
-                    ColumnType::Money => {
-                        let val = row.get(i);
-                        GenericDataSQLServer::Float(val)
-                    }
-                    ColumnType::Bit => {
-                        let val = row.get(i);
-                        GenericDataSQLServer::Bool(val)
-                    }
-                    ColumnType::Guid => {
-                        let unique_id: Uuid = row.get(i).unwrap();
-                        GenericDataSQLServer::Text(Some(unique_id.to_string()))
-                    }
-                    _ => {
-                        return Err(Box::new(Error::new(
-                            std::io::ErrorKind::BrokenPipe,
-                            "Error parsing data from Origin",
-                        )));
-                    }
-                };
-                result.push((i.to_string(), GenericDatasetDBMS::SQLSERVER(value)));
+            for (i, col) in row.columns().iter().enumerate() {
+                let col_type = col.column_type();
+                match col_type {
+                    ColumnType::Null => {}
+                    _ => {}
+                }
             }
         }
         _ => {}
     }
-    Ok(result)
+    Ok(dml_batch)
 }
 
-fn query_build_insertions(
-    columns: &Vec<CanonnicalColumns>,
-    table_name: &str,
-    schema_table: &str,
-) -> String {
-    let mut batch = String::new();
-    batch.push_str("INSERT INTO ");
-    batch.push_str(format!("{}.{}", table_name, schema_table).as_str());
-    batch.push_str(" (");
-    let first_col = match columns.get(1) {
-        Some(val) => {
-            println!("{:?}", val);
-            val
-        }
-        None => {
-            eprintln!("Error parsing the first element in the list!");
-            return " ".to_string();
-        }
-    };
-    let cols: String = first_col.get_keys_as_joined_cols();
-    batch.push_str(&cols);
-    batch.push_str(") VALUES ");
-    // columns.iter().for_each(|cols_data| {
-    for (a, cols_data) in columns.iter().enumerate() {
-        let cols_size = columns.len();
-        let fields: &Vec<(_, GenericDatasetDBMS)> = cols_data.get_data_ref();
-        let list_size: usize = fields.len();
-        for (i, (_, val)) in fields.iter().enumerate() {
-            if i.eq(&0) {
-                batch.push_str(" (");
-            }
-            //mark data for it's type ('' for Strings and Dates)
-            let value_insert = match val {
-                GenericDatasetDBMS::SQLSERVER(values) => match values {
-                    GenericDataSQLServer::Text(text) => {
-                        //format!("'{}'", text.as_ref().unwrap_or(&String::new()))
-                        if text.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("'{}'", text.as_ref().unwrap())
-                        }
-                    }
-                    //times
-                    GenericDataSQLServer::Date(date) => {
-                        if date.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("'{}'", date.as_ref().unwrap())
-                        }
-                    }
-                    GenericDataSQLServer::DateTimeLocal(datelocal) => {
-                        if datelocal.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("'{}'", datelocal.as_ref().unwrap())
-                        }
-                    }
-                    //binaries
-                    GenericDataSQLServer::BigBinary(binary) => {
-                        if binary.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("'{:?}'", binary.as_ref().unwrap())
-                        }
-                    }
-                    GenericDataSQLServer::Bit(bits) => {
-                        if bits.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("'{}'", bits.as_ref().unwrap())
-                        }
-                    }
-                    //numerics
-                    GenericDataSQLServer::Int(ints) => {
-                        if ints.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("{}", ints.as_ref().unwrap())
-                        }
-                    }
-                    GenericDataSQLServer::SmallInt(sint) => {
-                        if sint.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("{}", sint.as_ref().unwrap())
-                        }
-                    }
-                    GenericDataSQLServer::Float(floats) => {
-                        if floats.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("{}", floats.as_ref().unwrap())
-                        }
-                    }
-                    GenericDataSQLServer::Bool(boolean) => {
-                        if boolean.as_ref().is_none() {
-                            "NULL".to_string()
-                        } else {
-                            format!("{}", boolean.as_ref().unwrap())
-                        }
-                    }
-                },
-                _ => "".to_string(),
-            };
-            batch.push_str(&value_insert);
-            if cols_size - 1 == a {
-                batch.push_str(");");
-            } else {
-                if list_size - 1 == i {
-                    batch.push_str("),");
-                } else {
-                    batch.push_str(",");
-                }   
-            }            
-        }
-    }
-    //});
-    batch
-}
+// fn query_value_build(
+//     stream: QueryItem,
+// ) -> Result<Vec<(String, GenericDatasetDBMS)>, Box<dyn std::error::Error>> {
+//     let mut result: Vec<(String, GenericDatasetDBMS)> = Vec::new();
+//     match stream {
+//         QueryItem::Row(row) => {
+//             for col in row.columns() {
+//                 let i = col.name();
+//                 let value = match col.column_type() {
+//                     ColumnType::Int4 => {
+//                         let val = row.get(i);
+//                         GenericDataSQLServer::Int(val)
+//                     }
+//                     ColumnType::Int2 => {
+//                         let val = row.get(i);
+//                         GenericDataSQLServer::SmallInt(val)
+//                     }
+//                     ColumnType::Int1 => {
+//                         let val = row.get::<u8, _>(i).map(|data| data.to_be());
+//                         GenericDataSQLServer::Bit(val)
+//                     }
+//                     ColumnType::NVarchar | ColumnType::NChar => {
+//                         let val = row.get::<&str, _>(i).map(|data| data.to_string());
+//                         GenericDataSQLServer::Text(val)
+//                     }
+//                     ColumnType::BigVarChar => {
+//                         let val = row.get::<&str, _>(i).map(|data| data.to_string());
+//                         GenericDataSQLServer::Text(val)
+//                     }
+//                     ColumnType::Datetime | ColumnType::Datetimen => {
+//                         let val: Option<NaiveDateTime> = row.get(i);
+//                         GenericDataSQLServer::DateTimeLocal(val)
+//                     }
+//                     ColumnType::Daten => {
+//                         let val: Option<NaiveDate> = row.get(i);
+//                         GenericDataSQLServer::Date(val)
+//                     }
+//                     ColumnType::BigVarBin => {
+//                         let val: Option<Vec<u8>> = row.get::<&[u8], _>(i).map(|b| b.to_vec());
+//                         GenericDataSQLServer::BigBinary(val)
+//                     }
+//                     ColumnType::Numericn | ColumnType::Decimaln => {
+//                         let decimal_n: Numeric =
+//                             row.get(i).unwrap_or_else(|| Numeric::new_with_scale(0, 0));
+//                         GenericDataSQLServer::Float(Some(f64::from(decimal_n)))
+//                     }
+//                     ColumnType::Money => {
+//                         let val = row.get(i);
+//                         GenericDataSQLServer::Float(val)
+//                     }
+//                     ColumnType::Bit => {
+//                         let val = row.get(i);
+//                         GenericDataSQLServer::Bool(val)
+//                     }
+//                     ColumnType::Guid => {
+//                         let unique_id: Uuid = row.get(i).unwrap();
+//                         GenericDataSQLServer::Text(Some(unique_id.to_string()))
+//                     }
+//                     _ => {
+//                         return Err(Box::new(Error::new(
+//                             std::io::ErrorKind::BrokenPipe,
+//                             "Error parsing data from Origin",
+//                         )));
+//                     }
+//                 };
+//                 result.push((i.to_string(), GenericDatasetDBMS::SQLSERVER(value)));
+//             }
+//         }
+//         _ => {}
+//     }
+//     Ok(result)
+// }
+
+// fn query_build_insertions(
+//     columns: &Vec<CanonnicalColumns>,
+//     table_name: &str,
+//     schema_table: &str,
+// ) -> String {
+//     let mut batch = String::new();
+//     batch.push_str("INSERT INTO ");
+//     batch.push_str(format!("{}.{}", table_name, schema_table).as_str());
+//     batch.push_str(" (");
+//     let first_col = match columns.get(1) {
+//         Some(val) => {
+//             println!("{:?}", val);
+//             val
+//         }
+//         None => {
+//             eprintln!("Error parsing the first element in the list!");
+//             return " ".to_string();
+//         }
+//     };
+//     let cols: String = first_col.get_keys_as_joined_cols();
+//     batch.push_str(&cols);
+//     batch.push_str(") VALUES ");
+//     // columns.iter().for_each(|cols_data| {
+//     for (a, cols_data) in columns.iter().enumerate() {
+//         let cols_size = columns.len();
+//         let fields: &Vec<(_, GenericDatasetDBMS)> = cols_data.get_data_ref();
+//         let list_size: usize = fields.len();
+//         for (i, (_, val)) in fields.iter().enumerate() {
+//             if i.eq(&0) {
+//                 batch.push_str(" (");
+//             }
+//             //mark data for it's type ('' for Strings and Dates)
+//             let value_insert = match val {
+//                 GenericDatasetDBMS::SQLSERVER(values) => match values {
+//                     GenericDataSQLServer::Text(text) => {
+//                         //format!("'{}'", text.as_ref().unwrap_or(&String::new()))
+//                         if text.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("'{}'", text.as_ref().unwrap())
+//                         }
+//                     }
+//                     //times
+//                     GenericDataSQLServer::Date(date) => {
+//                         if date.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("'{}'", date.as_ref().unwrap())
+//                         }
+//                     }
+//                     GenericDataSQLServer::DateTimeLocal(datelocal) => {
+//                         if datelocal.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("'{}'", datelocal.as_ref().unwrap())
+//                         }
+//                     }
+//                     //binaries
+//                     GenericDataSQLServer::BigBinary(binary) => {
+//                         if binary.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("'{:?}'", binary.as_ref().unwrap())
+//                         }
+//                     }
+//                     GenericDataSQLServer::Bit(bits) => {
+//                         if bits.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("'{}'", bits.as_ref().unwrap())
+//                         }
+//                     }
+//                     //numerics
+//                     GenericDataSQLServer::Int(ints) => {
+//                         if ints.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("{}", ints.as_ref().unwrap())
+//                         }
+//                     }
+//                     GenericDataSQLServer::SmallInt(sint) => {
+//                         if sint.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("{}", sint.as_ref().unwrap())
+//                         }
+//                     }
+//                     GenericDataSQLServer::Float(floats) => {
+//                         if floats.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("{}", floats.as_ref().unwrap())
+//                         }
+//                     }
+//                     GenericDataSQLServer::Bool(boolean) => {
+//                         if boolean.as_ref().is_none() {
+//                             "NULL".to_string()
+//                         } else {
+//                             format!("{}", boolean.as_ref().unwrap())
+//                         }
+//                     }
+//                 },
+//                 _ => "".to_string(),
+//             };
+//             batch.push_str(&value_insert);
+//             if cols_size - 1 == a {
+//                 batch.push_str(");");
+//             } else {
+//                 if list_size - 1 == i {
+//                     batch.push_str("),");
+//                 } else {
+//                     batch.push_str(",");
+//                 }
+//             }
+//         }
+//     }
+//     //});
+//     batch
+// }
 
 fn column_query_builder(columns: &Vec<ColumnMembers>) -> String {
     columns
@@ -235,6 +273,9 @@ pub async fn get_rows_from_tables(
     row_offset: i32,
 ) -> Result<bool, Box<dyn std::error::Error>> {
     let mut cannon_col: Vec<CanonnicalColumns> = Vec::new();
+    //removable mutable String
+    let mut all_queries_made = String::new();
+    //
     for metadata in tables_metadata {
         let table_key: &(String, String) = metadata.0;
         let table_metadata: &TableMetadata = metadata.1;
@@ -247,7 +288,7 @@ pub async fn get_rows_from_tables(
             .iter()
             .find(|pred| pred.get_table_name_as_ref().eq(&table_key.0))
             .unwrap_or(&empty_otherwise)
-            .get_col_name_as_ref();
+            .get_col_name_as_ref();        
         while next <= table_rows {
             next += row_offset;
             if next > table_rows {
@@ -266,26 +307,35 @@ pub async fn get_rows_from_tables(
                 next, // Next
             );
             //println!("Query exec : {}", query_build);
+            // queries write up for document (this will impact the overall time to execute all the actions)
+            let clone_query = query_build.clone();
+            all_queries_made.push_str(clone_query.as_str());
+            //
             let mut content_write = String::new();
             content_write.push_str(&query_build);
             //Execute Query!
             let mut streams = connection.query(query_build, &[]).await?;
             while let Some(stream) = streams.try_next().await? {
-                let middle = query_value_build(stream).unwrap();
-                let cannon_col_si =
-                    CanonnicalColumns::new(table_key.0.as_str().to_string(), middle);
-                cannon_col.push(cannon_col_si);
+                let dml = build_insertion_dml_sentence(
+                    stream,
+                    table_key.0.as_str(),
+                    table_key.1.as_str(),
+                );
+                let string_dml: String = match dml {
+                    Ok(data) => data,
+                    Err(err) => {
+                        panic!("Error at getting metadata! {}", err)
+                    }
+                };
+                content_write.push_str(string_dml.as_str());
             }
-            let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
-            content_write.push_str(&format!("\n{}", &batch));
+            //let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
             let file_name = format!(
                 "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}-offset{}-next{}.txt",
                 table_key.0,
                 prev, //Offset
                 next, // Next
             );
-            //
-            // println!("schema : {} | table : {}", table_key.0, table_key.1);
             file_writer::write_to_file_os(content_write, &file_name.to_string());
             //clear actions
             content_write = "".to_string();
@@ -296,5 +346,8 @@ pub async fn get_rows_from_tables(
             }
         }
     }
+    let file_name_queries =
+        "/data/Main/personal_projects/own/grendtrekk_writes_ddl/all_queries.txt";
+    file_writer::write_to_file_os(all_queries_made, &file_name_queries.to_string());
     Ok(true)
 }
