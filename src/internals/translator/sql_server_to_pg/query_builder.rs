@@ -112,7 +112,9 @@ fn query_build_insertions(
     let cols: String = first_col.get_keys_as_joined_cols();
     batch.push_str(&cols);
     batch.push_str(") VALUES ");
-    columns.iter().for_each(|cols_data| {
+    // columns.iter().for_each(|cols_data| {
+    for (a, cols_data) in columns.iter().enumerate() {
+        let cols_size = columns.len();
         let fields: &Vec<(_, GenericDatasetDBMS)> = cols_data.get_data_ref();
         let list_size: usize = fields.len();
         for (i, (_, val)) in fields.iter().enumerate() {
@@ -189,18 +191,22 @@ fn query_build_insertions(
                             format!("{}", boolean.as_ref().unwrap())
                         }
                     }
-                    _ => "".to_string(),
                 },
                 _ => "".to_string(),
             };
             batch.push_str(&value_insert);
-            if list_size - 1 == i {
+            if cols_size - 1 == a {
                 batch.push_str(");");
             } else {
-                batch.push_str("),");
-            }
+                if list_size - 1 == i {
+                    batch.push_str("),");
+                } else {
+                    batch.push_str(",");
+                }   
+            }            
         }
-    });
+    }
+    //});
     batch
 }
 
@@ -269,7 +275,7 @@ pub async fn get_rows_from_tables(
                 let cannon_col_si =
                     CanonnicalColumns::new(table_key.0.as_str().to_string(), middle);
                 cannon_col.push(cannon_col_si);
-            }            
+            }
             let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
             content_write.push_str(&format!("\n{}", &batch));
             let file_name = format!(
