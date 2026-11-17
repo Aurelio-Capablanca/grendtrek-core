@@ -15,7 +15,8 @@ use crate::{
             database_types::{collation::Collations, query::Query, types::TypeMapper},
             db_reg::DatabaseRegistry,
         },
-        translator::sql_server_to_pg::{ddl_translation, query_builder},
+        translator::sql_server_to_pg::{ddl_translation},
+        migrator::sql_server_to_pg::query_builder,
         utilities,
     },
     outer::databases::db_actions::pg_actions,
@@ -204,6 +205,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let end_time_tb_creation = Instant::now();
     println!("time to create all tables: {:?}",end_time_tb_creation.duration_since(now_start));
 
+    
+    let now_start_bulk = Instant::now();
+    println!("Bulk time start : {:?}",now_start_bulk);
     // insert bulks
     let mut connection = match origin {
         DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
@@ -212,10 +216,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
     let offset: i32 = 1000;
-
     let result_types =
         query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
     println!("Is Successful : {}", result_types);
+    let end_now_bulk = Instant::now();
+    println!("Bulk time End : {:?}",end_now_bulk.duration_since(now_start_bulk));
     let end_now = Instant::now();
     println!("time elapsed : {:?}",end_now.duration_since(now_start));
     Ok(())

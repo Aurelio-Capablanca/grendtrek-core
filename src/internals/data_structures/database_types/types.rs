@@ -3,7 +3,7 @@ use serde::Deserialize;
 use crate::internals::data_structures::database_connector_spec::VendorOptions;
 
 #[derive(Deserialize, Debug)]
-pub struct TypeMapper{
+pub struct TypeMapper{    
     engine_origin: VendorOptions,
     engine_destiny: VendorOptions,
     type_origin: String,

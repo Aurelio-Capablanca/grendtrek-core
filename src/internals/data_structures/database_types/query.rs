@@ -2,6 +2,11 @@ use serde::Deserialize;
 
 use crate::internals::data_structures::database_connector_spec::VendorOptions;
 
+/**
+ * Consider to begin to use a new form of ID, 
+ * offically recognized for the tool, instead of just 
+ * asking for numerations at the queries
+ */
 #[derive(Debug, Deserialize)]
 pub struct Query {
     engine: VendorOptions,
