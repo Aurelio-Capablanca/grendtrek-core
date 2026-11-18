@@ -209,15 +209,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let now_start_bulk = Instant::now();
     println!("Bulk time start : {:?}",now_start_bulk);
     // insert bulks
-    let mut connection = match origin {
-        DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.get().await.unwrap(),
+    let connection = match origin {
+        DatabaseHandlers::SqlServerPool(conn) => conn.mssql_pool.to_owned(),
         _ => {
             panic!("No connection ? at SQL Server pool")
         }
     };
     let offset: i32 = 1000;
     let result_types =
-        query_builder::get_rows_from_tables(&canonnical_model, &mut connection, offset).await?;
+        query_builder::get_rows_to_issue_dml(canonnical_model, connection, offset).await?;
     println!("Is Successful : {}", result_types);
     let end_now_bulk = Instant::now();
     println!("Bulk time End : {:?}",end_now_bulk.duration_since(now_start_bulk));

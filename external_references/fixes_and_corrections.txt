@@ -1,0 +1,10 @@
+1. Change Offset pagination for Key-Range partitioning 
+
+ej: MIN(pk) and MAX(pk)
+
+WHERE pk >= @lo AND pk < @hi
+
+
+2. full query for smaller tables (ej. <10000 rows)
+
+3. investigate how to use a mscp channel for the parallel jobs 

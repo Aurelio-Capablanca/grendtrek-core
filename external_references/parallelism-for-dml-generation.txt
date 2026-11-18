@@ -114,3 +114,6 @@ first off it is required to remap the whole DML generation to these complete typ
     ----
     
     the tool has to cover all the possible cases not only the ones right now at AdventureWorks
+    
+    
+    

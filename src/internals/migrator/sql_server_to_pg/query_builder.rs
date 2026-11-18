@@ -1,7 +1,12 @@
 use std::collections::HashMap;
 
+use std::error::Error;
+use std::sync::{Arc, LazyLock, Mutex};
+
+use bb8::{Pool, RunError};
 use bb8_tiberius::ConnectionManager;
 use futures_util::TryStreamExt;
+use futures_util::future::join_all;
 use tiberius::QueryItem;
 use tiberius::time::chrono::{DateTime, FixedOffset, NaiveTime};
 use tiberius::{
@@ -10,12 +15,16 @@ use tiberius::{
     numeric::Numeric,
     time::chrono::{NaiveDate, NaiveDateTime},
 };
+use tokio::task::JoinHandle;
 
 use crate::internals::data_structures::database_metadata::{
     constraint_metadata::IdentitySpecification,
     db_metadata::{cannonical_columns::ColumnMembers, cannonical_tables::TableMetadata},
 };
 use crate::utilities::file_writer;
+
+static EMPTY_OTHERWISE: LazyLock<IdentitySpecification> =
+    LazyLock::new(|| IdentitySpecification::empty_struct());
 
 /**
  Work at gathering all the columns without too much recomputation from the original execution at
@@ -236,81 +245,200 @@ fn column_query_builder(columns: &Vec<ColumnMembers>) -> String {
         .join(" , ")
 }
 
-pub async fn get_rows_from_tables(
-    tables_metadata: &HashMap<(String, String), TableMetadata>,
-    connection: &mut bb8::PooledConnection<'_, ConnectionManager>,
+// pub async fn get_rows_from_tables(
+//     tables_metadata: HashMap<(String, String), TableMetadata>,
+//     connection: Pool<ConnectionManager>,
+//     row_offset: i32,
+// ) -> Result<bool, Box<dyn std::error::Error>> {
+//     let threads = tokio::spawn(async move {
+//         for metadata in tables_metadata {
+//             let table_key: (String, String) = metadata.0;
+//             let table_metadata: TableMetadata = metadata.1;
+//             let table_rows = table_metadata.get_total_rows_as_ref().clone();
+//             let mut next: i32 = row_offset;
+//             let mut prev = 0;
+
+//             let pk_identifier = table_metadata
+//                 .get_pk_as_ref()
+//                 .iter()
+//                 .find(|pred| pred.get_table_name_as_ref().eq(&table_key.0))
+//                 .unwrap_or(&EMPTY_OTHERWISE)
+//                 .get_col_name_as_ref();
+
+//             let mut raw_conn = match connection.get().await {
+//                 Ok(conn) => conn,
+//                 Err(err) => panic!("Unable to get SQL Server Connection : {}", err),
+//             };
+//             while next <= table_rows {
+//                 // consider insert here logic for spawning threads
+//                 if table_rows >= 1000 {
+//                     next += row_offset;
+//                     if next > table_rows {
+//                         let res = next - table_rows;
+//                         next = next - res;
+//                     }
+//                 } else {
+//                     next = table_rows;
+//                 }
+//                 //Do the query!
+//                 let columns_query = column_query_builder(table_metadata.get_cols_as_ref());
+//                 let query_build = format!(
+//                     "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
+//                     columns_query,
+//                     table_key.1, //schema
+//                     table_key.0, //table
+//                     pk_identifier,
+//                     prev, //Offset
+//                     next, // Next
+//                 );
+//                 let mut content_write = String::new();
+//                 content_write.push_str(&query_build);
+//                 //Execute Query!
+//                 let mut streams = raw_conn.query(query_build, &[]).await.unwrap();
+//                 content_write.push_str(
+//                     format!(
+//                         "\n INSERT INTO {}.{} (",
+//                         table_key.0.as_str(),
+//                         table_key.1.as_str()
+//                     )
+//                     .as_str(),
+//                 );
+//                 // logic needed to iterate on cols
+//                 content_write.push_str(" ) \n VALUES");
+//                 while let Some(stream) = streams.try_next().await.unwrap() {
+//                     let dml = build_insertion_dml_sentence(stream);
+//                     let string_dml: String = match dml {
+//                         Ok(data) => data,
+//                         Err(err) => {
+//                             panic!("Error at getting metadata! {}", err)
+//                         }
+//                     };
+//                     content_write.push_str(string_dml.as_str());
+//                 }
+//                 //let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
+//                 let file_name = format!(
+//                     "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}-offset{}-next{}.txt",
+//                     table_key.0,
+//                     prev, //Offset
+//                     next, // Next
+//                 );
+//                 file_writer::write_to_file_os(content_write, &file_name.to_string());
+//                 //clear actions
+//                 content_write = "".to_string();
+//                 prev = next;
+//                 if next == table_rows {
+//                     break;
+//                 }
+//             }
+//         }
+//         Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+//     });
+//     threads.await.unwrap();
+//     Ok(true)
+// }
+
+pub async fn get_rows_to_issue_dml(
+    tables_metadata: HashMap<(String, String), TableMetadata>,
+    connection: Pool<ConnectionManager>,
     row_offset: i32,
 ) -> Result<bool, Box<dyn std::error::Error>> {
-    for metadata in tables_metadata {
-        let table_key: &(String, String) = metadata.0;
-        let table_metadata: &TableMetadata = metadata.1;
-        let table_rows = *table_metadata.get_total_rows_as_ref();
-        let mut next: i32 = row_offset;
-        let mut prev = 0;
-        let empty_otherwise = IdentitySpecification::empty_struct();
-        let pk_identifier = table_metadata
-            .get_pk_as_ref()
-            .iter()
-            .find(|pred| pred.get_table_name_as_ref().eq(&table_key.0))
-            .unwrap_or(&empty_otherwise)
-            .get_col_name_as_ref();
-        while next <= table_rows {
-            // consider insert here logic for spawning threads
-            next += row_offset;
-            if next > table_rows {
-                let res = next - table_rows;
-                next = next - res;
-            }
-            //Do the query!
-            let columns_query = column_query_builder(table_metadata.get_cols_as_ref());
-            let query_build = format!(
-                "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
-                columns_query,
-                table_key.1, //schema
-                table_key.0, //table
-                pk_identifier,
-                prev, //Offset
-                next, // Next
-            );
-            let mut content_write = String::new();
-            content_write.push_str(&query_build);
-            //Execute Query!
-            let mut streams = connection.query(query_build, &[]).await?;
-            content_write.push_str(
-                format!(
-                    "\n INSERT INTO {}.{} (",
-                    table_key.0.as_str(),
-                    table_key.1.as_str()
-                )
-                .as_str(),
-            );
-            // logic needed to iterate on cols
-            content_write.push_str(" ) \n VALUES");
-            while let Some(stream) = streams.try_next().await? {
-                let dml = build_insertion_dml_sentence(stream);
-                let string_dml: String = match dml {
-                    Ok(data) => data,
-                    Err(err) => {
-                        panic!("Error at getting metadata! {}", err)
+    let mut handlers : Vec<JoinHandle<Result<(), Box<dyn Error + Send + Sync>>>> = Vec::new();
+
+    for (keys, metadata) in tables_metadata {
+        let pool = connection.clone();       
+        
+        let handler = tokio::spawn(async move {
+            
+            let mut conn = pool.get().await?;
+            
+            let table_key: (String, String) = keys;
+            let table_metadata: TableMetadata = metadata;
+            let table_rows = table_metadata.get_total_rows_as_ref().clone();
+            let mut next: i32 = row_offset;
+            let mut prev = 0;
+
+            let pk_identifier = table_metadata
+                .get_pk_as_ref()
+                .iter()
+                .find(|pred| pred.get_table_name_as_ref().eq(&table_key.0))
+                .unwrap_or(&EMPTY_OTHERWISE)
+                .get_col_name_as_ref();
+
+            while next <= table_rows {
+                // consider insert here logic for spawning threads
+                if table_rows >= 1000 {
+                    next += row_offset;
+                    if next > table_rows {
+                        let res = next - table_rows;
+                        next = next - res;
                     }
-                };
-                content_write.push_str(string_dml.as_str());
+                } else {
+                    next = table_rows;
+                }
+                //Do the query!
+                let columns_query = column_query_builder(table_metadata.get_cols_as_ref());
+                let query_build = format!(
+                    "SELECT {} FROM [{}].[{}] ORDER BY [{}]  OFFSET {} ROWS FETCH NEXT {} ROWS ONLY;",
+                    columns_query,
+                    table_key.1, //schema
+                    table_key.0, //table
+                    pk_identifier,
+                    prev, //Offset
+                    next, // Next
+                );
+                let mut content_write = String::new();
+                content_write.push_str(&query_build);
+                //Execute Query!
+                let mut streams = conn.query(query_build, &[]).await.unwrap();
+                content_write.push_str(
+                    format!(
+                        "\n INSERT INTO {}.{} (",
+                        table_key.0.as_str(),
+                        table_key.1.as_str()
+                    )
+                    .as_str(),
+                );
+                // logic needed to iterate on cols
+                content_write.push_str(" ) \n VALUES");
+                while let Some(stream) = streams.try_next().await.unwrap() {
+                    let dml = build_insertion_dml_sentence(stream);
+                    let string_dml: String = match dml {
+                        Ok(data) => data,
+                        Err(err) => {
+                            panic!("Error at getting metadata! {}", err)
+                        }
+                    };
+                    content_write.push_str(string_dml.as_str());
+                }
+                //let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
+                let file_name = format!(
+                    "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}-offset{}-next{}.txt",
+                    table_key.0,
+                    prev, //Offset
+                    next, // Next
+                );
+                file_writer::write_to_file_os(content_write, &file_name.to_string());
+                //clear actions
+                content_write = "".to_string();
+                prev = next;
+                if next == table_rows {
+                    break;
+                }
             }
-            //let batch = query_build_insertions(&cannon_col, &table_key.0, &table_key.1);
-            // let file_name = format!(
-            //     "/data/Main/personal_projects/own/grendtrekk_writes_ddl/{}-offset{}-next{}.txt",
-            //     table_key.0,
-            //     prev, //Offset
-            //     next, // Next
-            // );
-            // file_writer::write_to_file_os(content_write, &file_name.to_string());
-            //clear actions
-            content_write = "".to_string();
-            prev = next;
-            if next == table_rows {
-                break;
-            }
+            Ok::<(), Box<dyn std::error::Error + Send + Sync>>(())
+        });
+        
+        handlers.push(handler);
+    }
+    
+    let gatherers = join_all(handlers).await;
+    
+    for gatherer in gatherers {
+        match gatherer {
+            Ok(result) => result.unwrap(),
+            Err(err) => return Err(Box::new(err))
         }
     }
+    
     Ok(true)
 }
