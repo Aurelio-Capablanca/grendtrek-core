@@ -8,4 +8,10 @@ GrendTrekk as this title states it's a database migrator tool desgined for high 
 
 as I've worked extensively on this project more as a personal milestone, than actually on the pursue of knowledge rather than actually a way to seek profit in such a project that small and with a limited target of audiences that the intention of the present is to be a tool for Developers, DBA's, and overall users interested in a database migration of vendor to vendor, as here the term migration is used on behalf of chaning the very vendor of a database (ex. SQL Server) to a different one (ex. PostgreSQL), treating the data and it's structure as the very core of the database, limiting it to just it's structure and the data contained in it, as the project takes on a limit, hence until December 2026, it's not considered under the scope of the project to add a feature to migrate a database programmability (in any case this if considered under a scope of migration should be on the very programmer/executor of the tool, or if not, outsource to a LLM to rewrite it).
 
-so in shorter words, the scope and limitations are set, being that the tool goal is to cover database migrations between SQL Server, PostgreSQL, SQLite, MySQL and Oracle, being that for the alpha version of the project it's only covered SQL Server to PostgreSQL,
+so in shorter words, the scope and limitations are set, being that the tool goal is to cover database migrations between SQL Server, PostgreSQL, SQLite, MySQL and Oracle, being that for the alpha version of the project it's only covered SQL Server to PostgreSQL, furhter more when the initial case get's refined; the next cases will begin to be worked on, as then the second round will cover MySQL to PostgreSQL.
+
+### Acknowledments:
+
+---
+
+### Thecnical choices:
