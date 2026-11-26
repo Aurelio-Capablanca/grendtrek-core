@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use std::error::Error;
-use std::sync::{Arc, LazyLock, Mutex};
+use std::sync::LazyLock;
 
-use bb8::{Pool, RunError};
+use bb8::{Pool, PooledConnection};
 use bb8_tiberius::ConnectionManager;
 use futures_util::TryStreamExt;
 use futures_util::future::join_all;
@@ -256,9 +256,8 @@ pub async fn get_rows_to_issue_dml(
     for (keys, metadata) in tables_metadata {
         let pool = connection.clone();       
         
-        let handler = tokio::spawn(async move {
-            
-            let mut conn = pool.get().await?;
+        let handler = tokio::spawn(async move {            
+            let mut conn : PooledConnection<'_, ConnectionManager> = pool.get().await?;
             
             let table_key: (String, String) = keys;
             let table_metadata: TableMetadata = metadata;
